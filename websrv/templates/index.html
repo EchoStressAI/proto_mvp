@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Запись видео</title>
+</head>
+<body>
+  <h1>Видео-диалог</h1>
+  
+  <div>
+    <h2>Вопрос</h2>
+    <video id="questionVideo" controls autoplay></video>
+    <button id="loadQuestion">Загрузить вопрос</button>
+  </div>
+
+  <div>
+    <h2>Ваш ответ</h2>
+    <video id="preview" autoplay muted></video>
+    <video id="recorded" controls></video>
+    <div>
+      <button id="startRecording">Начать запись</button>
+      <button id="stopRecording" disabled>Остановить запись</button>
+      <button id="uploadAnswer" disabled>Отправить ответ</button>
+    </div>
+  </div>
+
+  <script>
+    const questionVideo = document.getElementById('questionVideo');
+    const previewVideo = document.getElementById('preview');
+    const recordedVideo = document.getElementById('recorded');
+    const loadQuestionBtn = document.getElementById('loadQuestion');
+    const startRecordingBtn = document.getElementById('startRecording');
+    const stopRecordingBtn = document.getElementById('stopRecording');
+    const uploadAnswerBtn = document.getElementById('uploadAnswer');
+
+    let mediaRecorder;
+    let recordedChunks = [];
+    let cameraStream;
+
+    // Загрузить видео вопроса
+    loadQuestionBtn.addEventListener('click', async () => {
+      const response = await fetch('/get_question');
+      if (response.ok) {
+        const videoBlob = await response.blob();
+        questionVideo.src = URL.createObjectURL(videoBlob);
+      } else {
+        alert('Ошибка загрузки вопроса');
+      }
+    });
+
+    // Начать запись
+    startRecordingBtn.addEventListener('click', async () => {
+      try {
+        // Доступ к камере и микрофону
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+        // Отображение камеры в реальном времени
+        previewVideo.srcObject = cameraStream;
+
+        // Подготовка MediaRecorder
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.start();
+
+        startRecordingBtn.disabled = true;
+        stopRecordingBtn.disabled = false;
+        uploadAnswerBtn.disabled = true;
+      } catch (error) {
+        console.error('Ошибка доступа к камере или микрофону:', error);
+        alert('Ошибка доступа к камере или микрофону. Проверьте настройки.');
+      }
+    });
+
+    // Остановить запись
+    stopRecordingBtn.addEventListener('click', () => {
+      mediaRecorder.stop();
+
+      mediaRecorder.onstop = () => {
+        const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+        recordedVideo.src = URL.createObjectURL(videoBlob);
+        previewVideo.srcObject = null;
+
+        // Остановка потоков камеры и микрофона
+        cameraStream.getTracks().forEach((track) => track.stop());
+
+        stopRecordingBtn.disabled = true;
+        uploadAnswerBtn.disabled = false;
+      };
+    });
+
+    // Отправить видео на сервер
+    uploadAnswerBtn.addEventListener('click', async () => {
+      const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+      const formData = new FormData();
+      formData.append('video', videoBlob, 'answer.webm');
+
+      const response = await fetch('/upload_answer', { method: 'POST', body: formData });
+      if (response.ok) {
+        alert('Видео успешно отправлено!');
+      } else {
+        alert('Ошибка отправки видео');
+      }
+    });
+  </script>
+</body>
+</html>

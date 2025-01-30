@@ -1,0 +1,4 @@
+numpy==1.24
+pika==1.1.0
+praat-parselmouth
+librosa

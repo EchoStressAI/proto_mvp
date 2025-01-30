@@ -1,5 +1,0 @@
-fastapi
-pywhispercpp
-uvicorn[standard]
-scipy
-python-multipart

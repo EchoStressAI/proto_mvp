@@ -1,0 +1,84 @@
+version: '1.0'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    restart: always
+    ports:
+       - 5672:5672
+       - 15672:15672
+
+  web-server:
+    build: ./websrv
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+    restart: always
+    environment:
+      FLASK_PORT: 5000
+    depends_on:
+      - rabbitmq
+
+  video2sound:
+    build: ./vid2snd
+    volumes:
+      - ./data:/app/data
+    restart: always
+    depends_on:
+      - rabbitmq
+      - web-server
+
+  asr:
+    build: ./asr
+    restart: always
+    volumes:
+      - ./models:/app/onnx
+      - ./data:/app/data
+    environment:
+      MODEL_TYPE: ctc
+      ONNX_DIR: onnx
+    depends_on:
+      - rabbitmq
+      - web-server
+      - video2sound
+
+
+  audfeat:
+    build: ./audfeat
+    restart: always
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - rabbitmq
+      - web-server
+      - video2sound
+
+  logger:
+    build: ./dblogger
+    restart: always
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - rabbitmq
+      - web-server
+      - video2sound
+      - asr
+      - audfeat
+
+  llama-server:
+    image: ghcr.io/ggerganov/llama.cpp:server
+    container_name: llama_server
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/models
+    command: >
+      -m /models/llama_1b_q8_0.gguf
+      --port 8000
+      --host 0.0.0.0
+      -n 512
+
