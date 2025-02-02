@@ -1,7 +1,6 @@
 simpleaudio
 torch
-numpy
+numpy==1.24
 num2words
 transliterate
-fastapi
-uvicorn[standard]
+pika==1.1.0

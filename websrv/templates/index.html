@@ -10,7 +10,7 @@
   
   <div>
     <h2>Вопрос</h2>
-    <video id="questionVideo" controls autoplay></video>
+    <audio id="questionAudio" controls></audio>
     <button id="loadQuestion">Загрузить вопрос</button>
   </div>
 
@@ -38,16 +38,18 @@
     let recordedChunks = [];
     let cameraStream;
 
-    // Загрузить видео вопроса
+    // Загрузить аудиовопрос с сервера
     loadQuestionBtn.addEventListener('click', async () => {
       const response = await fetch('/get_question');
       if (response.ok) {
-        const videoBlob = await response.blob();
-        questionVideo.src = URL.createObjectURL(videoBlob);
+        const audioBlob = await response.blob();
+        questionAudio.src = URL.createObjectURL(audioBlob);
       } else {
-        alert('Ошибка загрузки вопроса');
+        alert('Ошибка загрузки аудиовопроса');
       }
     });
+
+
 
     // Начать запись
     startRecordingBtn.addEventListener('click', async () => {

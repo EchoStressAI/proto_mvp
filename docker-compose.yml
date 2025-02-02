@@ -68,6 +68,34 @@ services:
       - asr
       - audfeat
 
+  main:
+    build: ./main
+    restart: always
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - rabbitmq
+      - web-server
+      - video2sound
+      - asr
+
+
+  tts:
+    build: ./tts
+    restart: always
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+    environment:
+      SPEAKER: xenia
+      SAMPLE_RATE: 48000
+    depends_on:
+      - rabbitmq
+      - web-server
+      - video2sound
+      - asr
+      - main
+
   llama-server:
     image: ghcr.io/ggerganov/llama.cpp:server
     container_name: llama_server
