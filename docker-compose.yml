@@ -46,6 +46,27 @@ services:
       - video2sound
 
 
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: echodatabase
+    ports:
+      - "5430:5432"
+    volumes:
+      - ./data/pg_data:/var/lib/postgresql/data
+      - ./init_scripts:/docker-entrypoint-initdb.d
+    secrets:
+      - postgres_password
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U dbuser -d echodatabase" ]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
   audfeat:
     build: ./audfeat
     restart: always
@@ -109,4 +130,9 @@ services:
       --port 8000
       --host 0.0.0.0
       -n 512
+
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password
 
