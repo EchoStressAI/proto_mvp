@@ -82,6 +82,15 @@ services:
     restart: always
     volumes:
       - ./data:/app/data
+
+    environment:
+      DB_HOST: postgres
+      DB_NAME: echodatabase
+      DB_USER: dbuser
+      DB_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+
     depends_on:
       - rabbitmq
       - web-server

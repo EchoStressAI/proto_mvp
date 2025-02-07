@@ -3,6 +3,22 @@ import json
 import os
 import logging
 import numpy as np
+import psycopg2
+
+# Читаем переменные окружения
+DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_NAME = os.getenv("DB_NAME", "echodatabase")
+DB_USER = os.getenv("DB_USER", "dbuser")
+
+# Читаем пароль из файла секрета
+with open("/run/secrets/postgres_password", "r") as f:
+    DB_PASSWORD = f.read().strip()
+
+# Подключение к PostgreSQL
+conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST)
+cur = conn.cursor()
+
+
 
 EXCHANGE = 'logger'
 EXCHANGE_IN1 = 'video'
@@ -27,12 +43,67 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 
 
+def get_table_columns(conn, table_name):
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = %s;
+        """, (table_name,))
+        return {row[0] for row in cur.fetchall()}
 
 
+        
+        
+def upsert_chanks(conn, existing_columns, user_id, timestamp, **kwargs):
+    if not kwargs:
+        return  # Нечего обновлять
+    
+    # Фильтруем только существующие колонки
+    valid_columns = {col: val for col, val in kwargs.items() if col in existing_columns}
+    if not valid_columns:
+        return  # Нет подходящих колонок для обновления
+    
+    columns = list(valid_columns.keys())
+    values = list(valid_columns.values())
+    
+    insert_columns = ', '.join(['user_id', 'timestamp'] + columns)
+    insert_placeholders = ', '.join(['%s', '%s'] + ['%s'] * len(columns))
+    update_assignments = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns])
+    
+    query = f"""
+        INSERT INTO chanks ({insert_columns})
+        VALUES ({insert_placeholders})
+        ON CONFLICT (user_id, timestamp) DO UPDATE SET {update_assignments};
+    """
+    
+    with conn.cursor() as cur:
+        cur.execute(query, [user_id, timestamp] + values)
+        conn.commit()        
+
+existing_columns = get_table_columns(conn, 'chanks')  # Получаем список колонок один раз за сессию
 
 # Создаём функцию callback для обработки данных из очереди
 def callback(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
+    if isinstance(body, bytes):
+        body = json.loads(body.decode('utf-8'))
+    body['timestamp']='2024-02-06 12:30:00'
+    upsert_chanks(conn=conn, existing_columns=existing_columns,**body)
+    # username ='xxx'
+    # email = 'xxx@xxx.xx'
+
+    # if username and email:
+    #     try:
+    #         cur.execute(
+    #             "INSERT INTO users (username, email) VALUES (%s, %s) ON CONFLICT (username) DO NOTHING;",
+    #             (username, email),
+    #         )
+    #         conn.commit()
+    #         print(f"Добавлен пользователь: {username}, {email}")
+    #     except Exception as e:
+    #         print(f"Ошибка при добавлении пользователя: {e}")
+    #         conn.rollback()
+        
     # message = json.loads(body)
     # user_id = message['user_id']
     # audio_file_name = message['fname']

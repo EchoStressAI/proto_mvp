@@ -78,14 +78,14 @@ def extract_audio_features(audio_file_path):
 
         logging.info("Характеристики извлечены успешно")
         return {
-            "ЧОТсреднее": round(pitch_mean, 2),
-            "ЧОТмедиан": round(pitch_median, 2),
-            "Громкость": round(loudness, 2),
-            "ГолосовыеИмпульсы": round(voice_impulses, 2),
-            "Паузы": round(pauses_scaled, 5),
-            "Джиттер": round(jitter, 5),
-            "Шиммер": round(shimmer, 5),
-            "Тревожность": round(anxiety, 2)
+            "pitch_mean": round(pitch_mean, 2),
+            "pitch_median": round(pitch_median, 2),
+            "loudness": round(loudness, 2),
+            "voice_impulses": round(voice_impulses, 2),
+            "pauses_scaled": round(pauses_scaled, 5),
+            "jitter": round(jitter, 5),
+            "shimmer": round(shimmer, 5),
+            "anxiety": round(anxiety, 2)
         }
     except Exception as e:
         logging.error(f"Ошибка при извлечении характеристик: {e}")
@@ -100,7 +100,7 @@ def callback(ch, method, properties, body):
     audio_file_name = message['fname']
     audio_file_path = os.path.join(DATA_DIR, audio_file_name)
 
-    logging.info(f'start transcribe: {audio_file_path}')
+    logging.info(f'start extract: {audio_file_path}')
     message = extract_audio_features(audio_file_path)
 
     logging.info(f'features: {message}')

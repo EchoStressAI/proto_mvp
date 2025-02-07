@@ -62,17 +62,7 @@ def callback(ch, method, properties, body):
     logging.info(f"tts -  end write audio - {audio_path}.")    
 
     message['fname'] = fname        
-    # user_id = message['user_id']
-    # audio_file_name = message['fname']
-    # audio_file_path = os.path.join(DATA_DIR, audio_file_name)
-
-    # logging.info(f'start transcribe: {audio_file_path}')
-    # message = extract_audio_features(audio_file_path)
-
-    # logging.info(f'features: {message}')
-
-    # message['user_id'] = user_id
-    
+  
 
     channel.basic_publish(
         exchange = EXCHANGE,
