@@ -11,7 +11,7 @@ import time
 
 
 EXCHANGE = 'tts'
-EXCHANGE_IN = 'text'
+EXCHANGE_IN = 'main'
 
 speaker=os.environ.get("SPEAKER",'xenia')
 sample_rate = int(os.environ.get("SAMPLE_RATE",'8000'))

@@ -10,6 +10,49 @@ services:
        - 5672:5672
        - 15672:15672
 
+  llamaserver:
+    image: ghcr.io/ggerganov/llama.cpp:server-cuda
+    container_name: llamaserver
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/models
+    command: >
+      -m /models/llama_1b_q8_0.gguf
+      --port 8000
+      --host 0.0.0.0
+      -n 512
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: echodatabase
+    ports:
+      - "5430:5432"
+    volumes:
+      - ./data/pg_data:/var/lib/postgresql/data
+      - ./init_scripts:/docker-entrypoint-initdb.d
+    secrets:
+      - postgres_password
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U dbuser -d echodatabase" ]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
+
   web-server:
     build: ./websrv
     ports:
@@ -46,26 +89,6 @@ services:
       - video2sound
 
 
-  postgres:
-    image: postgres:15
-    container_name: postgres_db
-    restart: always
-    environment:
-      POSTGRES_USER: dbuser
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      POSTGRES_DB: echodatabase
-    ports:
-      - "5430:5432"
-    volumes:
-      - ./data/pg_data:/var/lib/postgresql/data
-      - ./init_scripts:/docker-entrypoint-initdb.d
-    secrets:
-      - postgres_password
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U dbuser -d echodatabase" ]
-      interval: 10s
-      retries: 5
-      start_period: 5s
 
   audfeat:
     build: ./audfeat
@@ -108,6 +131,7 @@ services:
       - web-server
       - video2sound
       - asr
+      - llamaserver
 
 
   tts:
@@ -126,19 +150,6 @@ services:
       - asr
       - main
 
-  llama-server:
-    image: ghcr.io/ggerganov/llama.cpp:server
-    container_name: llama_server
-    restart: always
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./models:/models
-    command: >
-      -m /models/llama_1b_q8_0.gguf
-      --port 8000
-      --host 0.0.0.0
-      -n 512
 
 
 secrets:
