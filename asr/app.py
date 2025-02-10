@@ -37,7 +37,7 @@ def callback(ch, method, properties, body):
     user_id = message['user_id']
     audio_file_name = message['fname']
     audio_file_path = os.path.join(DATA_DIR, audio_file_name)
-
+    tstamp = message['timestamp']
     logging.info(f'start transcribe: {audio_file_path}')
     recognized_text = transcribe_sample(audio_file_path, model_type, sessions)
 
@@ -47,7 +47,8 @@ def callback(ch, method, properties, body):
     
     message = {
         'user_id': user_id,
-        'text': recognized_text
+        'text': recognized_text,
+        'timestamp':tstamp
     }
 
     channel.basic_publish(

@@ -52,6 +52,7 @@ def callback(ch, method, properties, body):
     message = json.loads(body)
     user_id = message['user_id']
     video_file = message['fname']
+    tstamp = message['timestamp']
 
 
     # Извлечение аудиодорожки из выбранного видеофайла
@@ -59,7 +60,8 @@ def callback(ch, method, properties, body):
     
     message = {
         'user_id': user_id,
-        'fname': audio_file
+        'fname': audio_file,
+        'timestamp':tstamp
     }
 
     channel.basic_publish(

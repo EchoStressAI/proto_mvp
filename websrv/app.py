@@ -73,6 +73,7 @@ def upload_answer():
         str_time = time.strftime("%a_%d_%b_%Y_%H_%M_%S", time.gmtime())
         fname = f"{user_id}_{str_time}_full.mp4"
         video_path = os.path.join(DATA_DIR, fname)
+        tstamp = time.mktime(time.gmtime())
         logging.info(f"webserver -  start write video - {video_path}.")    
 
         video.save(video_path)
@@ -80,7 +81,8 @@ def upload_answer():
 
         message = {
 	        'user_id': user_id,
-    	    'fname': fname
+    	    'fname': fname,
+            'timestamp':tstamp
 	    }
         # connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
         # channel = connection.channel()

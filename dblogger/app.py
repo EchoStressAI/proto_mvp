@@ -4,6 +4,7 @@ import os
 import logging
 import numpy as np
 import psycopg2
+from datetime import datetime
 
 # Читаем переменные окружения
 DB_HOST = os.getenv("DB_HOST", "postgres")
@@ -43,6 +44,11 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 
 
+def convert_timestamp(timestamp):
+    if isinstance(timestamp, (int, float)):  # Если передан UNIX timestamp
+        return datetime.utcfromtimestamp(timestamp)
+    return timestamp  # Если уже datetime или строка
+
 def get_table_columns(conn, table_name):
     with conn.cursor() as cur:
         cur.execute("""
@@ -57,6 +63,9 @@ def get_table_columns(conn, table_name):
 def upsert_chanks(conn, existing_columns, user_id, timestamp, **kwargs):
     if not kwargs:
         return  # Нечего обновлять
+    
+    # Преобразуем timestamp в datetime, если он передан как число
+    timestamp = convert_timestamp(timestamp)    
     
     # Фильтруем только существующие колонки
     valid_columns = {col: val for col, val in kwargs.items() if col in existing_columns}
@@ -87,7 +96,7 @@ def callback(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     if isinstance(body, bytes):
         body = json.loads(body.decode('utf-8'))
-    body['timestamp']='2024-02-06 12:30:00'
+    #body['timestamp']='2024-02-06 12:30:00'
     upsert_chanks(conn=conn, existing_columns=existing_columns,**body)
     # username ='xxx'
     # email = 'xxx@xxx.xx'

@@ -99,14 +99,14 @@ def callback(ch, method, properties, body):
     user_id = message['user_id']
     audio_file_name = message['fname']
     audio_file_path = os.path.join(DATA_DIR, audio_file_name)
-
+    tstamp = message['timestamp']
     logging.info(f'start extract: {audio_file_path}')
     message = extract_audio_features(audio_file_path)
 
     logging.info(f'features: {message}')
 
     message['user_id'] = user_id
-    
+    message['timestamp']  = tstamp
 
     channel.basic_publish(
         exchange= EXCHANGE,
