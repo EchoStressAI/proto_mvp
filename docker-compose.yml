@@ -121,6 +121,25 @@ services:
       - asr
       - audfeat
 
+
+  textemo:
+    build: ./textemo
+    restart: always
+    volumes:
+      - ./models/emobert:/app/model
+    depends_on:
+      - rabbitmq
+      - web-server
+      - video2sound
+      - asr
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
   main:
     build: ./main
     restart: always
