@@ -32,12 +32,12 @@ LABELS = ["admiration","amusement","anger","annoyance", "approval", "caring", "c
 MODEL_PATH = 'model'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-print("Загрузка модели и токенайзера...")
+logging.info("Загрузка модели и токенайзера...")
 tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
 model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
 model.to(device)
 model.eval()
-print("Модель загружена!")
+logging.info("Модель загружена!")
 
 # Функция для предсказания эмоций с вероятностями
 def predict_emotions(text: str) -> dict:
