@@ -64,10 +64,16 @@ def callback(ch, method, properties, body):
     message['fname'] = fname        
   
 
-    channel.basic_publish(
-        exchange = EXCHANGE,
+    # Открываем новое подключение и канал для публикации
+    connection_pub = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+    channel_pub = connection_pub.channel()
+    channel_pub.exchange_declare(exchange=EXCHANGE, exchange_type="fanout")
+    channel_pub.basic_publish(
+        exchange=EXCHANGE,
         routing_key='',
-        body=json.dumps(message))
+        body=json.dumps(message)
+    )
+    connection_pub.close()
 
     logging.info(f"сообщение успешно обработано")
 

@@ -11,7 +11,13 @@
   <div>
     <h2>Вопрос</h2>
     <audio id="questionAudio" controls></audio>
+    <br>
+    <!-- Кнопка для загрузки вопроса -->
     <button id="loadQuestion">Загрузить вопрос</button>
+    <!-- Новая кнопка для проверки наличия вопроса -->
+    <button id="checkQuestion">Есть вопрос?</button>
+    <!-- Кнопка подтверждения вопроса (удаления) -->
+    <button id="ackQuestion">Подтвердить вопрос</button>
   </div>
 
   <div>
@@ -26,10 +32,13 @@
   </div>
 
   <script>
-    const questionVideo = document.getElementById('questionVideo');
+    const questionAudio = document.getElementById('questionAudio');
+    const loadQuestionBtn = document.getElementById('loadQuestion');
+    const checkQuestionBtn = document.getElementById('checkQuestion');
+    const ackQuestionBtn = document.getElementById('ackQuestion');
+
     const previewVideo = document.getElementById('preview');
     const recordedVideo = document.getElementById('recorded');
-    const loadQuestionBtn = document.getElementById('loadQuestion');
     const startRecordingBtn = document.getElementById('startRecording');
     const stopRecordingBtn = document.getElementById('stopRecording');
     const uploadAnswerBtn = document.getElementById('uploadAnswer');
@@ -44,34 +53,54 @@
       if (response.ok) {
         const audioBlob = await response.blob();
         questionAudio.src = URL.createObjectURL(audioBlob);
+        ackQuestionBtn.disabled = false;
       } else {
-        alert('Ошибка загрузки аудиовопроса');
+        alert('Ошибка загрузки аудиовопроса или вопросов нет');
+        questionAudio.src = "";
+        ackQuestionBtn.disabled = true;
       }
     });
 
+    // Проверить наличие вопроса
+    checkQuestionBtn.addEventListener('click', async () => {
+      // Выполняем запрос на получение вопроса без загрузки в аудио
+      const response = await fetch('/check_question');
+      if (response.ok) {
+        alert('Вопрос найден!');
+      } else {
+        alert('Вопросов нет!');
+      }
+    });
 
+    // Подтвердить (ack) вопрос после его обработки с проверкой наличия
+    ackQuestionBtn.addEventListener('click', async () => {
+      if (!questionAudio.src) {
+        alert('Вопрос не загружен. Пожалуйста, загрузите вопрос.');
+        return;
+      }
+      const response = await fetch('/ack_question', { method: 'POST' });
+      if (response.ok) {
+        alert('Вопрос подтвержден и удалён из очереди');
+        questionAudio.src = "";
+        ackQuestionBtn.disabled = true;
+      } else {
+        alert('Ошибка подтверждения вопроса');
+      }
+    });
 
     // Начать запись
     startRecordingBtn.addEventListener('click', async () => {
       try {
-        // Доступ к камере и микрофону
         cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
-        // Отображение камеры в реальном времени
         previewVideo.srcObject = cameraStream;
-
-        // Подготовка MediaRecorder
         recordedChunks = [];
         mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
-
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
             recordedChunks.push(event.data);
           }
         };
-
         mediaRecorder.start();
-
         startRecordingBtn.disabled = true;
         stopRecordingBtn.disabled = false;
         uploadAnswerBtn.disabled = true;
@@ -84,15 +113,11 @@
     // Остановить запись
     stopRecordingBtn.addEventListener('click', () => {
       mediaRecorder.stop();
-
       mediaRecorder.onstop = () => {
         const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
         recordedVideo.src = URL.createObjectURL(videoBlob);
         previewVideo.srcObject = null;
-
-        // Остановка потоков камеры и микрофона
         cameraStream.getTracks().forEach((track) => track.stop());
-
         stopRecordingBtn.disabled = true;
         uploadAnswerBtn.disabled = false;
       };
@@ -103,7 +128,6 @@
       const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
       const formData = new FormData();
       formData.append('video', videoBlob, 'answer.webm');
-
       const response = await fetch('/upload_answer', { method: 'POST', body: formData });
       if (response.ok) {
         alert('Видео успешно отправлено!');

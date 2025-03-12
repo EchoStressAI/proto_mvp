@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification
+import mlflow
 
 EXCHANGE = 'textemo'
 EXCHANGE_IN = 'text'
@@ -22,36 +23,27 @@ channel.exchange_declare(exchange=EXCHANGE, exchange_type="fanout")
 
 
 
-# Классы эмоций (замени на свои, если у модели другой набор классов)
-LABELS = ["admiration","amusement","anger","annoyance", "approval", "caring", "confusion", 
-          "curiosity", "desire", "disappointment", "disapproval", "disgust", "embarrassment", 
-          "excitement", "fear", "gratitude", "grief", "joy", "love", "nervousness", "optimism", 
-          "pride", "realization", "relief", "remorse", "sadness", "surprise", "neutral"]
+# Классы эмоций 
+EMOTIONS = ['anger', 'disgust', 'fear', 'joy', 'sadness', 'surprise', 'neutral']
 
 # Инициализация модели и токенайзера
 MODEL_PATH = 'model'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 logging.info("Загрузка модели и токенайзера...")
-tokenizer = BertTokenizer.from_pretrained(MODEL_PATH)
-model = BertForSequenceClassification.from_pretrained(MODEL_PATH)
-model.to(device)
-model.eval()
+
+# Создаем pipeline для инференса
+classifier =  mlflow.transformers.load_model(MODEL_PATH) 
+
+
 logging.info("Модель загружена!")
 
 # Функция для предсказания эмоций с вероятностями
 def predict_emotions(text: str) -> dict:
-    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
-    inputs = {k: v.to(device) for k, v in inputs.items()}
-
-    with torch.no_grad():
-        outputs = model(**inputs)
-
-    logits = outputs.logits
-    probabilities = torch.softmax(logits, dim=1).squeeze().tolist()
+    prediction = classifier(text, return_all_scores=True)
 
     # Возвращаем словарь с вероятностями эмоций
-    return {LABELS[i]: round(probabilities[i], 4) for i in range(len(LABELS))}
+    return {EMOTIONS[i]: round(prediction[0][i]['score'], 4) for i in range(len(EMOTIONS))}
 
 
 # Создаём функцию callback для обработки данных из очереди
