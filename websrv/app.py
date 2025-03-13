@@ -5,11 +5,17 @@ import pika
 import json
 import os
 import threading
+from datetime import datetime
+from flask_sqlalchemy import SQLAlchemy
+
 
 EXCHANGE = 'video'
 EXCHANGE_IN = 'tts'
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
 logging.basicConfig(level=logging.INFO,    
                     format='%(asctime)s - %(levelname)s - %(module)s - %(message)s'
@@ -31,10 +37,37 @@ os.makedirs(DATA_DIR, exist_ok=True)
 user_id = 1
 
 
+def get_current_user_id():
+    """
+    Извлекает идентификатор пользователя из HTTP-заголовка.
+    Если заголовок отсутствует или содержит некорректное значение, прерывает выполнение запроса.
+    """
+    return 1
+    # user_id = request.headers.get("X-User-ID")
+    # if not user_id:
+    #     abort(401, description="User not authorized: X-User-ID header missing")
+    # try:
+    #     return int(user_id)
+    # except ValueError:
+    #     abort(400, description="Invalid user id provided")
 
-questions = {}
-# Объект блокировки для синхронизации доступа к questions
-questions_lock = threading.Lock()
+# Модель пользователя (простейшая, для демонстрации)
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, nullable=False)
+
+# Модель вопроса, привязанного к пользователю
+class Question(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)  # Можно добавить ForeignKey для таблицы User
+    file_name = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Создаем таблицы (если их еще нет)
+with app.app_context():
+    db.create_all()
+    
+    
 
 @app.route("/")
 def index():
@@ -48,21 +81,19 @@ def get_question():
     Вопрос не удаляется из очереди, чтобы избежать повторного исчезновения.
     Клиент должен вызвать /ack_question после обработки.
     """
-    logging.info("Запрос вопроса")
-    global questions
-    global questions_lock
-    with questions_lock:
-        logging.info(f"Текущие вопросы: {questions}")
-        if user_id not in questions or not questions[user_id]:
-            logging.info("Вопросы для пользователя отсутствуют")
-            return jsonify({"info": "Вопросы для пользователя отсутствуют"}), 404
-        # Возвращаем первый вопрос, не удаляя его
-        fname = questions[user_id][0]
-    logging.info(f"Файл вопроса: {fname}")
+    user_id = get_current_user_id()
+    logging.info(f"User {user_id} requested a question")
+    # Ищем самый ранний вопрос для данного пользователя
+    question = Question.query.filter_by(user_id=user_id).order_by(Question.created_at).first()
+    if not question:
+        logging.info(f"No questions found for user {user_id}")
+        return jsonify({"info": "No questions found for user"}), 404
+    fname = question.file_name
+    logging.info(f"Found question file: {fname}")
     question_path = os.path.join(DATA_DIR, fname)
     if not os.path.exists(question_path):
-        logging.info("Аудиофайл вопроса отсутствует")
-        return jsonify({"error": "Аудиофайл вопроса отсутствует"}), 404
+        logging.error("Audio file for question not found")
+        return jsonify({"error": "Audio file for question not found"}), 404
     return send_from_directory(DATA_DIR, fname)
 
 
@@ -72,39 +103,35 @@ def ack_question():
     Подтверждает (удаляет) текущий вопрос для пользователя.
     Клиент вызывает этот эндпоинт после обработки вопроса.
     """
-    logging.info("Удаление вопроса")
-    global questions
-    global questions_lock
-    with questions_lock:
-        if user_id in questions and questions[user_id]:
-            removed = questions[user_id].pop(0)
-            logging.info(f"Вопрос {removed} подтвержден и удалён")
-            return jsonify({"message": "Вопрос подтвержден"}), 200
-        else:
-            return jsonify({"error": "Нет вопросов для подтверждения"}), 404
+    user_id = get_current_user_id()
+    logging.info(f"User {user_id} acknowledged a question")
+    # Находим и удаляем самый ранний вопрос для пользователя
+    question = Question.query.filter_by(user_id=user_id).order_by(Question.created_at).first()
+    if question:
+        fname = question.file_name
+        db.session.delete(question)
+        db.session.commit()
+        logging.info(f"Question {fname} acknowledged and removed for user {user_id}")
+        return jsonify({"message": "Question acknowledged"}), 200
+    else:
+        return jsonify({"error": "No question to acknowledge"}), 404
 
 @app.route("/check_question", methods=["GET"])
 def check_question():
     """
     Проверяет наличие вопросов для пользователя и возвращает JSON-ответ.
-    Если вопрос есть, возвращает сообщение "Вопрос найден" и имя файла вопроса.
-    Если вопросов нет, возвращает сообщение "Вопросов нет".
+    Если вопрос есть, возвращает сообщение "Question found" и имя файла вопроса.
+    Если вопросов нет, возвращает сообщение "No questions found".
     """
-    global questions
-    global questions_lock
-    logging.info("Проверка наличия вопросов")
-    with questions_lock:
-        
-        logging.info(f"Текущие вопросы: {questions}")
-        if user_id in questions and questions[user_id]:
-            logging.info("Вопрос найден")
-            return jsonify({
-                "message": "Вопрос найден",
-                "question": questions[user_id][0]
-            }), 200
-        else:
-            logging.info("Вопросов нет")
-            return jsonify({"message": "Вопросов нет"}), 404
+    user_id = get_current_user_id()
+    logging.info(f"User {user_id} checking for questions")
+    question = Question.query.filter_by(user_id=user_id).order_by(Question.created_at).first()
+    if question:
+        logging.info("Question found")
+        return jsonify({"message": "Question found"}), 200
+    else:
+        logging.info("No questions found")
+        return jsonify({"message": "No questions found"}), 404
         
 
 @app.route("/upload_answer", methods=["POST"])
@@ -152,23 +179,26 @@ def consume_questions():
     """Фоновый поток для ожидания сообщений из RabbitMQ"""
     #Создаём функцию callback для обработки данных из очереди
     def callback(ch, method, properties, body):
-        global questions
-        global questions_lock
-        try:
-            logging.info(f'Получено сообщение - {body}')
-            message = json.loads(body)
-            user_id = message['user_id']
-            fname = message['fname']
-            with questions_lock:
-                if user_id not in questions:
-                    questions[user_id] = []
-                questions[user_id].append(fname)
-                logging.info(f'Вопросы обновлены - {questions}')    
-            logging.info(f"сообщение успешно обработано")
-        except Exception as e:
-            logging.error(f"Ошибка в callback: {e}")
+        with app.app_context():
+            try:
+                logging.info(f'Получено сообщение - {body}')
+                message = json.loads(body)
+                user_id = message['user_id']
+                fname = message['fname']
+                if user_id is None or fname is None:
+                    logging.error("Invalid message received")
+                    return
+                # Создаем новую запись вопроса для пользователя
+                question = Question(user_id=user_id, file_name=fname)
+                db.session.add(question)
+                db.session.commit()
+                logging.info(f"Question for user {user_id} added to database")
+            except Exception as e:
+                logging.error(f"Error in callback: {e}")
         
     try:    
+        logging.info("Ожидание 30 секунд перед  попыткой подключения дадим всем запуститься...")
+        time.sleep(30)
         connection1 = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
         channel1 = connection1.channel()
         channel1.queue_declare(queue='websrv_text', durable=True)
@@ -179,8 +209,8 @@ def consume_questions():
     except Exception as e:
         logging.error(f"Ошибка в consume_questions: {e}")
     finally:
-        if connection and connection.is_open:
-            connection.close()
+        if connection1 and connection1.is_open:
+            connection1.close()
            
 
 

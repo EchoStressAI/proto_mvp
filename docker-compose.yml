@@ -1,4 +1,4 @@
-version: '1.0'
+version: '3.8'
 
 services:
   rabbitmq:
@@ -64,6 +64,11 @@ services:
       FLASK_PORT: 5000
     depends_on:
       - rabbitmq
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   video2sound:
     build: ./vid2snd
@@ -168,6 +173,7 @@ services:
       - video2sound
       - asr
       - main
+
 
   prometheus:
     image: prom/prometheus:latest
