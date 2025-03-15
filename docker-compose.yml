@@ -6,16 +6,15 @@ services:
     container_name: rabbitmq
     hostname: rabbitmq
     restart: always
-    ports:
-       - 5672:5672
-       - 15672:15672
+    # Удалены публикации портов
+    networks:
+      - internal
 
   llamaserver:
     image: ghcr.io/ggerganov/llama.cpp:server
     container_name: llamaserver
     restart: always
-    ports:
-      - "8000:8000"
+    # Порты не публикуем наружу
     volumes:
       - ./models:/models
     command: >
@@ -23,6 +22,8 @@ services:
       --port 8000
       --host 0.0.0.0
       -n 512
+    networks:
+      - internal
 
   postgres:
     image: postgres:15
@@ -32,8 +33,7 @@ services:
       POSTGRES_USER: dbuser
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: echodatabase
-    ports:
-      - "5430:5432"
+    # Удалён маппинг порта
     volumes:
       - ./data/pg_data:/var/lib/postgresql/data
       - ./init_scripts:/docker-entrypoint-initdb.d
@@ -44,12 +44,13 @@ services:
       interval: 10s
       retries: 5
       start_period: 5s
-
+    networks:
+      - internal
 
   web-server:
     build: ./websrv
     ports:
-      - "5000:5000"
+      - "5000:5000"   # единственный внешний порт
     volumes:
       - ./data:/app/data
     restart: always
@@ -62,6 +63,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
+      - public
 
   video2sound:
     build: ./vid2snd
@@ -71,6 +75,8 @@ services:
     depends_on:
       - rabbitmq
       - web-server
+    networks:
+      - internal
 
   asr:
     build: ./asr
@@ -85,8 +91,8 @@ services:
       - rabbitmq
       - web-server
       - video2sound
-
-
+    networks:
+      - internal
 
   audfeat:
     build: ./audfeat
@@ -97,13 +103,14 @@ services:
       - rabbitmq
       - web-server
       - video2sound
+    networks:
+      - internal
 
   logger:
     build: ./dblogger
     restart: always
     volumes:
       - ./data:/app/data
-
     environment:
       DB_HOST: postgres
       DB_NAME: echodatabase
@@ -111,14 +118,14 @@ services:
       DB_PASSWORD_FILE: /run/secrets/postgres_password
     secrets:
       - postgres_password
-
     depends_on:
       - rabbitmq
       - web-server
       - video2sound
       - asr
       - audfeat
-
+    networks:
+      - internal
 
   textemo:
     build: ./textemo
@@ -130,6 +137,8 @@ services:
       - web-server
       - video2sound
       - asr
+    networks:
+      - internal
 
   main:
     build: ./main
@@ -142,7 +151,8 @@ services:
       - video2sound
       - asr
       - llamaserver
-
+    networks:
+      - internal
 
   tts:
     build: ./tts
@@ -159,55 +169,65 @@ services:
       - video2sound
       - asr
       - main
-
+    networks:
+      - internal
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: always
-    ports:
-      - "9090:9090"
+    # Убран внешний маппинг порта
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./data/prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - internal
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
     restart: always
     ports:
-      - "3000:3000"
+      - "3000:3000"   # единственный внешний порт для Grafana
     volumes:
       - ./data/grafana-storage:/var/lib/grafana
+    networks:
+      - internal
+      - public
 
   nodeexplorer:
     image: quay.io/prometheus/node-exporter:latest
     container_name: nodeexplorer
     restart: always
-    ports:
-      - "9100:9100"
+    # Убран публикация порта
     command:
       - '--path.rootfs=/host'
     volumes:
       - /:/host:ro
+    networks:
+      - internal
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     restart: always
-    ports:
-      - "8080:8080"
+    # Убран публикация порта
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
-
-
+    networks:
+      - internal
 
 secrets:
   postgres_password:
     file: ./secrets/postgres_password
 
+networks:
+  internal:
+    internal: true
+  public:
+    driver: bridge
