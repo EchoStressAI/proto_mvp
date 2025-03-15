@@ -221,4 +221,8 @@ if __name__ == "__main__":
     threading.Thread(target=consume_questions, daemon=True).start()    
 
     logging.info("webserver start.")    
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", 
+            port=5000, 
+            debug=True,        
+#            ssl_context='adhoc'
+            )
