@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_from_directory, render_template, session, redirect, url_for, flash
 import time
 import logging
 import pika
@@ -7,7 +7,8 @@ import os
 import threading
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
-
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 
 EXCHANGE = 'video'
 EXCHANGE_IN = 'tts'
@@ -15,6 +16,11 @@ EXCHANGE_IN = 'tts'
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
+# Устанавливаем секретный ключ для сессий (замените на более надёжное значение)
+app.secret_key = "your-secret-key"
+
 db = SQLAlchemy(app)
 
 logging.basicConfig(level=logging.INFO,    
@@ -35,6 +41,18 @@ os.makedirs(DATA_DIR, exist_ok=True)
 
 #TODO сделать авторизацию и передавать id 
 user_id = 1
+# Декоратор для защиты маршрутов, требующих авторизации
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+         if "user_id" not in session:
+              flash("Пожалуйста, выполните вход для доступа к этой странице", "warning")
+              return redirect(url_for("login"))
+         return f(*args, **kwargs)
+    return decorated_function
+
 
 
 def get_current_user_id():
@@ -42,6 +60,7 @@ def get_current_user_id():
     Извлекает идентификатор пользователя из HTTP-заголовка.
     Если заголовок отсутствует или содержит некорректное значение, прерывает выполнение запроса.
     """
+    return session.get("user_id")    
     return 1
     # user_id = request.headers.get("X-User-ID")
     # if not user_id:
@@ -55,6 +74,13 @@ def get_current_user_id():
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128), nullable=False)
+    
+    def set_password(self, password):
+         self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+         return check_password_hash(self.password_hash, password)    
 
 # Модель вопроса, привязанного к пользователю
 class Question(db.Model):
@@ -67,9 +93,49 @@ class Question(db.Model):
 with app.app_context():
     db.create_all()
     
+
+# Маршрут для авторизации
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+         username = request.form.get("username")
+         password = request.form.get("password")
+         user = User.query.filter_by(username=username).first()
+         if user and user.check_password(password):
+              session["user_id"] = user.id
+              flash("Вы успешно вошли в систему", "success")
+              return redirect(url_for("index"))
+         else:
+              flash("Неверное имя пользователя или пароль", "danger")
+    return render_template("login.html")
+
+# Маршрут для регистрации
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+         username = request.form.get("username")
+         password = request.form.get("password")
+         if User.query.filter_by(username=username).first():
+              flash("Имя пользователя уже существует", "warning")
+         else:
+              new_user = User(username=username)
+              new_user.set_password(password)
+              db.session.add(new_user)
+              db.session.commit()
+              flash("Регистрация успешна. Теперь выполните вход.", "success")
+              return redirect(url_for("login"))
+    return render_template("register.html")
+
+# Маршрут для выхода из системы
+@app.route("/logout")
+def logout():
+    session.pop("user_id", None)
+    flash("Вы вышли из системы", "info")
+    return redirect(url_for("login"))
     
 
 @app.route("/")
+@login_required
 def index():
     """Возвращает HTML-страницу"""
     return render_template("index.html")
@@ -98,6 +164,7 @@ def get_question():
 
 
 @app.route("/ack_question", methods=["POST"])
+@login_required
 def ack_question():
     """
     Подтверждает (удаляет) текущий вопрос для пользователя.
@@ -117,6 +184,7 @@ def ack_question():
         return jsonify({"error": "No question to acknowledge"}), 404
 
 @app.route("/check_question", methods=["GET"])
+@login_required
 def check_question():
     """
     Проверяет наличие вопросов для пользователя и возвращает JSON-ответ.
@@ -135,6 +203,7 @@ def check_question():
         
 
 @app.route("/upload_answer", methods=["POST"])
+@login_required
 def upload_answer():
     try:
         """Принимает видео-ответ от пользователя"""
@@ -175,7 +244,7 @@ def upload_answer():
   
   
   
-def consume_questions():
+def consume_questions(): 
     """Фоновый поток для ожидания сообщений из RabbitMQ"""
     #Создаём функцию callback для обработки данных из очереди
     def callback(ch, method, properties, body):
