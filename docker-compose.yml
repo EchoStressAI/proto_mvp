@@ -47,6 +47,22 @@ services:
     networks:
       - internal
 
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - ./data/docker.sock:/var/run/docker.sock
+    ports:
+      - 8080:8080
+    environment:
+      DOZZLE_ENABLE_ACTIONS: true
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+
   web-server:
     build: ./websrv
     ports:
@@ -56,6 +72,12 @@ services:
     restart: always
     environment:
       FLASK_PORT: 5000
+      DB_HOST: postgres
+      DB_NAME: echodatabase
+      DB_USER: dbuser
+      DB_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
     depends_on:
       - rabbitmq
     healthcheck:

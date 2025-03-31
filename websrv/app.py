@@ -9,13 +9,37 @@ from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
+import psycopg2
 
+# Настройки подключения к PostgreSQL
+DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_NAME = os.getenv("DB_NAME", "echodatabase")
+DB_USER = os.getenv("DB_USER", "dbuser")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "dbpassword")
+
+# Читаем пароль из файла секрета
+with open("/run/secrets/postgres_password", "r") as f:
+    DB_PASSWORD = f.read().strip()
+    
+conn = psycopg2.connect(
+    dbname=DB_NAME,
+    user=DB_USER,
+    password=DB_PASSWORD,
+    host=DB_HOST
+)
+cur = conn.cursor()
+
+#очереди RabbitMQ
 EXCHANGE = 'video'
 EXCHANGE_IN = 'tts'
+
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+
+
 
 
 # Устанавливаем секретный ключ для сессий (замените на более надёжное значение)
@@ -61,26 +85,45 @@ def get_current_user_id():
     Если заголовок отсутствует или содержит некорректное значение, прерывает выполнение запроса.
     """
     return session.get("user_id")    
-    return 1
-    # user_id = request.headers.get("X-User-ID")
-    # if not user_id:
-    #     abort(401, description="User not authorized: X-User-ID header missing")
-    # try:
-    #     return int(user_id)
-    # except ValueError:
-    #     abort(400, description="Invalid user id provided")
 
-# Модель пользователя (простейшая, для демонстрации)
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
-    
+
+# Модель пользователя 
+class User:
+    def __init__(self, id=None, username=None, password_hash=None):
+        self.id = id
+        self.username = username
+        self.password_hash = password_hash
+
     def set_password(self, password):
-         self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-         return check_password_hash(self.password_hash, password)    
+        return check_password_hash(self.password_hash, password)
+
+    def save(self):
+        with conn.cursor() as cur:
+            if self.id is None:
+                cur.execute(
+                    "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id",
+                    (self.username, self.password_hash)
+                )
+                self.id = cur.fetchone()[0]
+            else:
+                cur.execute(
+                    "UPDATE users SET username=%s, password_hash=%s WHERE id=%s",
+                    (self.username, self.password_hash, self.id)
+                )
+        conn.commit()
+
+    @classmethod
+    def get_by_username(cls, username):
+        logging.info(f"User {username} requested auth")
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, username, password_hash FROM users WHERE username= %s;", (str(username),))
+            row = cur.fetchone()
+            if row:
+                return cls(*row)
+        return None
 
 # Модель вопроса, привязанного к пользователю
 class Question(db.Model):
@@ -100,7 +143,7 @@ def login():
     if request.method == "POST":
          username = request.form.get("username")
          password = request.form.get("password")
-         user = User.query.filter_by(username=username).first()
+         user = User.get_by_username(username)
          if user and user.check_password(password):
               session["user_id"] = user.id
               flash("Вы успешно вошли в систему", "success")
@@ -115,13 +158,12 @@ def register():
     if request.method == "POST":
          username = request.form.get("username")
          password = request.form.get("password")
-         if User.query.filter_by(username=username).first():
+         if  User.get_by_username(username):
               flash("Имя пользователя уже существует", "warning")
          else:
               new_user = User(username=username)
               new_user.set_password(password)
-              db.session.add(new_user)
-              db.session.commit()
+              new_user.save()
               flash("Регистрация успешна. Теперь выполните вход.", "success")
               return redirect(url_for("login"))
     return render_template("register.html")
