@@ -47,22 +47,6 @@ services:
     networks:
       - internal
 
-  dozzle:
-    image: amir20/dozzle:latest
-    volumes:
-      - ./data/docker.sock:/var/run/docker.sock
-    ports:
-      - 8080:8080
-    environment:
-      DOZZLE_ENABLE_ACTIONS: true
-    healthcheck:
-      test: ["CMD", "/dozzle", "healthcheck"]
-      interval: 10s
-      timeout: 30s
-      retries: 5
-      start_period: 30s
-
-
   web-server:
     build: ./websrv
     ports:
@@ -173,9 +157,17 @@ services:
       - video2sound
       - asr
       - llamaserver
+    environment:
+      LLM_MAX_NEW_TOKEN: 100
+      LLM_TEMPERATURE: 0.7
+      LLM_ADRESS: "http://llamaserver:8000/v1.7"
+      LLM_NAME: "gigachat"
+      LLM_API_KEY_FILE: /run/secrets/llm_api_key
+    secrets:
+      - llm_api_key
     networks:
       - internal
-
+      - public
   tts:
     build: ./tts
     restart: always
@@ -247,6 +239,8 @@ services:
 secrets:
   postgres_password:
     file: ./secrets/postgres_password
+  llm_api_key:
+    file: ./secrets/llm_api_key
 
 networks:
   internal:
