@@ -31,6 +31,7 @@ cur = conn.cursor()
 
 #очереди RabbitMQ
 EXCHANGE = 'video'
+EXCHANGE_AUTH = 'auth'
 EXCHANGE_IN = 'tts'
 
 
@@ -57,6 +58,7 @@ connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
 channel = connection.channel()
 
 channel.exchange_declare(exchange=EXCHANGE, exchange_type="fanout")
+channel.exchange_declare(exchange=EXCHANGE_AUTH, exchange_type="fanout")
 
 # Папка для хранения данных
 DATA_DIR = "./data"
@@ -89,9 +91,10 @@ def get_current_user_id():
 
 # Модель пользователя 
 class User:
-    def __init__(self, id=None, username=None, password_hash=None):
+    def __init__(self, id=None, username=None, publicname=None,password_hash=None):
         self.id = id
         self.username = username
+        self.publicname = publicname
         self.password_hash = password_hash
 
     def set_password(self, password):
@@ -104,14 +107,14 @@ class User:
         with conn.cursor() as cur:
             if self.id is None:
                 cur.execute(
-                    "INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id",
-                    (self.username, self.password_hash)
+                    "INSERT INTO users (username, publicname, password_hash) VALUES (%s,%s, %s) RETURNING id",
+                    (self.username, self.publicname, self.password_hash)
                 )
                 self.id = cur.fetchone()[0]
             else:
                 cur.execute(
-                    "UPDATE users SET username=%s, password_hash=%s WHERE id=%s",
-                    (self.username, self.password_hash, self.id)
+                    "UPDATE users SET username=%s, publicname=%s, password_hash=%s WHERE id=%s",
+                    (self.username, self.publicname, self.password_hash, self.id)
                 )
         conn.commit()
 
@@ -119,7 +122,7 @@ class User:
     def get_by_username(cls, username):
         logging.info(f"User {username} requested auth")
         with conn.cursor() as cur:
-            cur.execute("SELECT id, username, password_hash FROM users WHERE username= %s;", (str(username),))
+            cur.execute("SELECT id, username, publicname, password_hash FROM users WHERE username= %s;", (str(username),))
             row = cur.fetchone()
             if row:
                 return cls(*row)
@@ -145,9 +148,26 @@ def login():
          password = request.form.get("password")
          user = User.get_by_username(username)
          if user and user.check_password(password):
-              session["user_id"] = user.id
-              flash("Вы успешно вошли в систему", "success")
-              return redirect(url_for("index"))
+            session["user_id"] = user.id
+            flash("Вы успешно вошли в систему", "success")
+            # сообщим всем заинтеренованным сервисам о входе пользователя
+            tstamp = time.mktime(time.gmtime())
+            message = {
+                'user_id': user.id,
+                'username': username,
+                'publicname': user.publicname,
+                'timestamp':tstamp
+            }           
+            connection_pub = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+            channel_pub = connection_pub.channel()
+            channel_pub.exchange_declare(exchange=EXCHANGE_AUTH, exchange_type="fanout")
+            channel_pub.basic_publish(
+                exchange=EXCHANGE_AUTH,
+                routing_key='',
+                body=json.dumps(message)
+            )
+            connection_pub.close()              
+            return redirect(url_for("index"))
          else:
               flash("Неверное имя пользователя или пароль", "danger")
     return render_template("login.html")
@@ -156,12 +176,13 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+         publicname = request.form.get("publicname")
          username = request.form.get("username")
          password = request.form.get("password")
          if  User.get_by_username(username):
               flash("Имя пользователя уже существует", "warning")
          else:
-              new_user = User(username=username)
+              new_user = User(username=username,publicname=publicname)
               new_user.set_password(password)
               new_user.save()
               flash("Регистрация успешна. Теперь выполните вход.", "success")

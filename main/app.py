@@ -21,6 +21,7 @@ if not LLM_APIKEY:
 
 EXCHANGE = 'main'
 EXCHANGE_IN = 'text'
+EXCHANGE_IN_AUTH = 'auth'
 
 logging.basicConfig(level=logging.INFO,    
                     format='%(asctime)s - %(levelname)s - %(module)s - %(message)s'
@@ -31,6 +32,7 @@ connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
 channel = connection.channel()
 
 channel.exchange_declare(exchange = EXCHANGE, exchange_type = "fanout")
+
 
 
 # Папка для хранения данных
@@ -123,12 +125,27 @@ def callback(ch, method, properties, body):
 
     logging.info(f"сообщение успешно обработано")
 
-
+# Создаём функцию callback для обработки данных из очереди
+def callback_auth(ch, method, properties, body):
+    logging.info(f'Получено сообщение - {body}')
+    message = json.loads(body)
+    content = get_LLM_answer(f"К тебе пришел {message['publicname']} попривествуй его") 
+    logging.info(f'ответ модели - {content}')
+    message['text'] = content    
+    logging.info(f'сообщение к отправке: {message}')
+    channel.basic_publish(
+        exchange = EXCHANGE,
+        routing_key='',
+        body=json.dumps(message))
+    logging.info(f"сообщение успешно обработано")
 
 channel.queue_declare(queue='main_text', durable=True)
 channel.queue_bind(exchange=EXCHANGE_IN, queue='main_text', routing_key='')
 channel.basic_consume(queue='main_text', on_message_callback=callback, auto_ack=True)
 
+channel.queue_declare(queue='main_auth', durable=True)
+channel.queue_bind(exchange=EXCHANGE_IN_AUTH, queue='main_auth', routing_key='')
+channel.basic_consume(queue='main_auth', on_message_callback=callback_auth, auto_ack=True)
 
 
 
