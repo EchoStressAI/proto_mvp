@@ -6,6 +6,7 @@ import numpy as np
 from openai import OpenAI
 from gigachat import GigaChat
 from gigachat.models import Chat, Messages, MessagesRole
+import requests
 
 # Читаем переменные окружения
 LLM_MAX_NEW_TOKEN = os.getenv("LLM_MAX_NEW_TOKEN", "100")
@@ -93,7 +94,63 @@ else:
 
 
 
+# # ДОБАВЛЕНО: простой список вопросов опросника
+# SURVEY_QUESTIONS = [
+#     "Как вас зовут?",
+#     "Сколько вам лет?",
+#     "Как вы оцениваете своё настроение от 1 до 10?",
+#     "Есть ли что-то, что вы хотели бы обсудить?"
+# ]
 
+
+# ЗАГРУЗКА СПИСКА ВОПРОСОВ ИЗ ФАЙЛА
+SURVEY_QUESTIONS_PATH = os.path.join(DATA_DIR, "survey_questions.txt")
+
+def load_survey_questions(path):
+    if not os.path.exists(path):
+        logging.warning(f"Файл с вопросами не найден: {path}")
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        questions = [line.strip() for line in f if line.strip()]
+    logging.info(f"Загружено {len(questions)} вопросов из файла.")
+    return questions
+
+SURVEY_QUESTIONS = load_survey_questions(SURVEY_QUESTIONS_PATH)
+logging.info(f"Загружено {SURVEY_QUESTIONS} вопросы из файла.")
+
+# Хранилище состояния опроса
+SURVEY_STATE = {}
+
+#функция для запроса к локальному Rasa
+def get_rasa_intent(text: str, sender_id: str = "default") -> dict:
+    try:
+        response = requests.post(
+            "http://rasa-nlu:5005/model/parse",
+            json={"text": text},
+            timeout=3
+        )
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        logging.error(f"Ошибка при запросе к Rasa: {e}")
+        return {"intent": {"name": "unknown", "confidence": 0}}
+
+# логика обработки опроса
+def handle_survey(user_id: str, text: str) -> str:
+    state = SURVEY_STATE.get(user_id, {"step": 0, "answers": []})
+
+    # Если это не первый шаг — сохраняем предыдущий ответ
+    if state["step"] > 0:
+        state["answers"].append(text)
+
+    if state["step"] < len(SURVEY_QUESTIONS):
+        question = SURVEY_QUESTIONS[state["step"]]
+        state["step"] += 1
+        SURVEY_STATE[user_id] = state
+        return question
+    else:
+        del SURVEY_STATE[user_id]
+        return "Спасибо за прохождение опроса!"
 
 
 
@@ -103,21 +160,23 @@ else:
 def callback(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
-    content = get_LLM_answer(message['text']) 
-    logging.info(f'ответ модели - {content}')
-    message['text'] = content    
-    # user_id = message['user_id']
-    # audio_file_name = message['fname']
-    # audio_file_path = os.path.join(DATA_DIR, audio_file_name)
+    user_text = message.get("text", "")
+    user_id = str(message.get("user_id", "default"))
 
-    # logging.info(f'start transcribe: {audio_file_path}')
-    # message = extract_audio_features(audio_file_path)
+    rasa_result = get_rasa_intent(user_text, sender_id=user_id)
+    intent = rasa_result.get("intent", {}).get("name", "unknown")
 
-    logging.info(f'сообщение к отправке: {message}')
+    logging.info(f"Распознан интент: {intent}")
 
-    # message['user_id'] = user_id
-    
+    if intent == "start_survey" or user_id in SURVEY_STATE:
+        response_text = handle_survey(user_id, user_text)
+    elif intent == "ask_llm":
+        response_text = get_LLM_answer(user_text)
+    else:
+        response_text = "Извините, я вас не понял. Попробуйте иначе."
 
+    message['text'] = response_text
+    logging.info(f'Ответ: {response_text}')
     channel.basic_publish(
         exchange = EXCHANGE,
         routing_key='',

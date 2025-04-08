@@ -1,0 +1,13 @@
+version: "3.1"
+
+intents:
+  - start_survey
+  - ask_llm
+
+responses:
+  utter_default:
+    - text: "Извините, я вас не понял."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

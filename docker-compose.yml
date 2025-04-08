@@ -47,6 +47,18 @@ services:
     networks:
       - internal
 
+  rasa-nlu:
+    image: rasa/rasa:3.6.4
+    container_name: rasa-nlu
+    restart: always
+    volumes:
+      - ./rasa:/app
+    entrypoint: ""  # <--- отключаем стандартный ENTRYPOINT
+    command: >
+      bash -c "rasa train && rasa run --enable-api --port 5005"
+    networks:
+      - internal
+
   web-server:
     build: ./websrv
     ports:

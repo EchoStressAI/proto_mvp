@@ -1,0 +1,11 @@
+recipe: default.v1
+language: ru
+
+pipeline:
+- name: WhitespaceTokenizer
+- name: CountVectorsFeaturizer
+- name: DIETClassifier
+  epochs: 50
+- name: FallbackClassifier
+  threshold: 0.4
+assistant_id: 20250408-204735-glossy-peak
