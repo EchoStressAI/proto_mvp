@@ -1,0 +1,100 @@
+html {    
+    background: url(../images/bg_wave.svg) bottom no-repeat;
+    }
+  
+  .login-page {
+    background: #fff;
+    border-radius: 24px;
+    width: 376px;
+    box-shadow: 0px 8px 32px 0px rgb(10 42 66 / 24%);
+    padding: 40px;
+    box-sizing: border-box;
+  }
+  h2 {
+    font-family: Source Sans Pro;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 24px;
+    letter-spacing: 0%;
+    margin-bottom: 40px;
+    }
+    
+  .input_login {
+    background: #EDEDFC;
+    height: 56px;
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+    border-radius: 8px;
+    border:none;
+    margin-bottom: 15px;
+    font-family: Source Sans Pro;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 19px;
+    letter-spacing: 0px;
+    }
+  
+    button[type="submit"]{
+    background: #4D4DDB;
+    color:#fff;
+    border-radius: 40px;
+    height: 44px;
+    font-family: Source Sans Pro;
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 20px;
+    letter-spacing: 0%;
+    text-align: center;
+    margin-bottom: 24px;
+    }
+  
+  .login_extra {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  #root {
+    width:100%;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .logo {
+    width:172px;
+    will-change: filter;
+    transition: filter 300ms;
+  }
+  .logo:hover {
+    filter: drop-shadow(0 0 2em #646cffaa);
+  }
+  .logo.react:hover {
+    filter: drop-shadow(0 0 2em #61dafbaa);
+  }
+  
+  @keyframes logo-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  @media (prefers-reduced-motion: no-preference) {
+    a:nth-of-type(2) .logo {
+      animation: logo-spin infinite 20s linear;
+    }
+  }
+  
+  .card {
+    padding: 2em;
+  }
+  
+  .read-the-docs {
+    color: #888;
+  }
+  
