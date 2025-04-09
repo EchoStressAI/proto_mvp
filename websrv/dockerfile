@@ -7,6 +7,7 @@ WORKDIR /app
 # Скопируем файлы приложения в контейнер
 COPY ./requirements.txt ./
 COPY ./templates/ ./templates/
+COPY ./static/ ./static/
 RUN pip install --no-cache-dir -r requirements.txt
 
 ENV FLASK_PORT=5000
