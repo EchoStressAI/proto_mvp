@@ -59,6 +59,29 @@ services:
     networks:
       - internal
 
+  metabase:
+    image: metabase/metabase:latest
+    container_name: metabase
+    restart: always
+    ports:
+      - "3001:3000"  # доступ к метабейзу на localhost:3001
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: echodatabase
+      MB_DB_PORT: 5432
+      MB_DB_USER: dbuser
+      MB_DB_PASS_FILE: /run/secrets/postgres_password
+      MB_DB_HOST: postgres
+    depends_on:
+      - postgres
+    secrets:
+      - postgres_password
+    networks:
+      - internal
+      - public
+
+
+
   web-server:
     build: ./websrv
     ports:

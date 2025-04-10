@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Самоотчет</title>
+</head>
+<body>
+    <h1>Самоотчет</h1>
+    <form action="/self_report" method="post">
+        <fieldset>
+            <legend>Эмоциональное состояние</legend>
+            <label>Радость (1-5): <input type="number" name="joy" min="1" max="5"></label><br>
+            <label>Грусть (1-5): <input type="number" name="sadness" min="1" max="5"></label><br>
+            <label>Злость (1-5): <input type="number" name="anger" min="1" max="5"></label><br>
+            <label>Удивление (1-5): <input type="number" name="surprise" min="1" max="5"></label><br>
+        </fieldset>
+
+        <fieldset>
+            <legend>Эмоциональные события</legend>
+            <label>Были ли события?</label><br>
+            <input type="radio" name="emotional_event" value="нет" checked> Нет
+            <input type="radio" name="emotional_event" value="да"> Да<br>
+            <textarea name="event_details" placeholder="Опишите событие..."></textarea>
+        </fieldset>
+
+        <fieldset>
+            <legend>Стресс</legend>
+            <input type="radio" name="stress" value="нет" checked> Нет
+            <input type="radio" name="stress" value="да"> Да<br>
+            <label>Степень: <input type="number" name="stress_level" min="1" max="5"></label><br>
+            <label>Длительность: <input type="text" name="stress_duration"></label><br>
+            <label>Причина: <input type="text" name="stress_reason"></label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Усталость</legend>
+            <label>Степень: <input type="number" name="fatigue" min="1" max="5"></label><br>
+            <label>Длительность: <input type="text" name="fatigue_duration"></label><br>
+            <label>Причина: <input type="text" name="fatigue_reason"></label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Тревожность</legend>
+            <label>Степень: <input type="number" name="anxiety" min="1" max="5"></label><br>
+            <label>Длительность: <input type="text" name="anxiety_duration"></label><br>
+            <label>Причина: <input type="text" name="anxiety_reason"></label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Физическое состояние</legend>
+            <label>Текущее самочувствие (1–10): <input type="number" name="current_state" min="1" max="10"></label><br>
+            <label>Общее самочувствие с прошлой встречи (1–10): <input type="number" name="previous_state" min="1" max="10"></label><br>
+            <label>Проблемы со здоровьем: <textarea name="health_issues"></textarea></label>
+        </fieldset>
+
+        <input type="submit" value="Отправить">
+    </form>
+</body>
+</html>
