@@ -24,7 +24,7 @@ channel.exchange_declare(exchange=EXCHANGE, exchange_type="fanout")
 
 
 # Классы эмоций 
-EMOTIONS = ['anger', 'disgust', 'fear', 'joy', 'sadness', 'surprise', 'neutral']
+EMOTIONS = ['angry_text', 'disgusted_text', 'scared_text', 'happy_text', 'neutral_text', 'sad_text', 'surprised_text']
 
 # Инициализация модели и токенайзера
 MODEL_PATH = 'model'

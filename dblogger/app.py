@@ -25,6 +25,7 @@ EXCHANGE = 'logger'
 EXCHANGE_IN1 = 'video'
 EXCHANGE_IN2 = 'text'
 EXCHANGE_IN3 = 'feat'
+EXCHANGE_IN4 = 'textemo'
 EXCHANGE_IN_SELF_REPORT = 'self_report'
 
 logging.basicConfig(level=logging.INFO,    
@@ -62,6 +63,7 @@ def get_table_columns(conn, table_name):
         
         
 def upsert_chanks(conn, existing_columns, user_id, timestamp, **kwargs):
+    logging.info(f"existing_columns - {existing_columns}")    
     if not kwargs:
         return  # Нечего обновлять
     
@@ -72,6 +74,7 @@ def upsert_chanks(conn, existing_columns, user_id, timestamp, **kwargs):
     valid_columns = {col: val for col, val in kwargs.items() if col in existing_columns}
     if not valid_columns:
         return  # Нет подходящих колонок для обновления
+    logging.info(f"valid_columns - {valid_columns}")    
     
     columns = list(valid_columns.keys())
     values = list(valid_columns.values())
@@ -133,13 +136,7 @@ def insert_self_report(conn, report_data):
         conn.commit()
 
 
-# Создаём функцию callback для обработки данных из очереди
-def callback(ch, method, properties, body):
-    logging.info(f'Получено сообщение - {body}')
-    if isinstance(body, bytes):
-        body = json.loads(body.decode('utf-8'))
-    #body['timestamp']='2024-02-06 12:30:00'
-    
+   
     
     
 def callback(ch, method, properties, body):
@@ -154,6 +151,9 @@ def callback(ch, method, properties, body):
             
 
 
+channel.queue_declare(queue='log_text_emo', durable=True)
+channel.queue_bind(exchange=EXCHANGE_IN4, queue='log_text_emo', routing_key='')
+channel.basic_consume(queue='log_text_emo', on_message_callback=callback, auto_ack=True)
 
 channel.queue_declare(queue='log_text', durable=True)
 channel.queue_bind(exchange=EXCHANGE_IN2, queue='log_text', routing_key='')
@@ -173,7 +173,7 @@ channel.basic_consume(queue='log_self_report', on_message_callback=callback, aut
 
 if __name__ == "__main__":
     # Запускаем режим ожидания прихода сообщений
-    logging.info(f"Сервис извлечения характеристик стартует...")
+    logging.info(f"Сервис логгирования стартует...")
     channel.start_consuming()
     
     
