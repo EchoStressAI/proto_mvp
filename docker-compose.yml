@@ -119,6 +119,28 @@ services:
     networks:
       - internal
 
+  videofatigue:
+    build: ./videofat
+    volumes:
+      - ./data:/app/data
+    restart: always
+    depends_on:
+      - rabbitmq
+      - web-server
+    networks:
+      - internal
+
+  videoemo:
+    build: ./videoemo
+    volumes:
+      - ./data:/app/data
+    restart: always
+    depends_on:
+      - rabbitmq
+      - web-server
+    networks:
+      - internal
+
   asr:
     build: ./asr
     restart: always
@@ -146,6 +168,31 @@ services:
       - video2sound
     networks:
       - internal
+
+  audioemo:
+    build: ./audioemo
+    restart: always
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - rabbitmq
+      - web-server
+      - video2sound
+    networks:
+      - internal
+
+  audiofat:
+    build: ./audiofat
+    restart: always
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - rabbitmq
+      - web-server
+      - video2sound
+    networks:
+      - internal
+
 
   logger:
     build: ./dblogger

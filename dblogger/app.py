@@ -26,6 +26,11 @@ EXCHANGE_IN1 = 'video'
 EXCHANGE_IN2 = 'text'
 EXCHANGE_IN3 = 'feat'
 EXCHANGE_IN4 = 'textemo'
+EXCHANGE_IN5 = 'audioemo'
+EXCHANGE_IN6 = 'videoemo'
+EXCHANGE_IN7 = 'videofat'
+EXCHANGE_IN8 = 'audiofat'
+
 EXCHANGE_IN_SELF_REPORT = 'self_report'
 
 logging.basicConfig(level=logging.INFO,    
@@ -155,6 +160,15 @@ channel.queue_declare(queue='log_text_emo', durable=True)
 channel.queue_bind(exchange=EXCHANGE_IN4, queue='log_text_emo', routing_key='')
 channel.basic_consume(queue='log_text_emo', on_message_callback=callback, auto_ack=True)
 
+channel.queue_declare(queue='log_vid_emo', durable=True)
+channel.queue_bind(exchange=EXCHANGE_IN6, queue='log_vid_emo', routing_key='')
+channel.basic_consume(queue='log_vid_emo', on_message_callback=callback, auto_ack=True)
+
+channel.queue_declare(queue='log_aud_emo', durable=True)
+channel.queue_bind(exchange=EXCHANGE_IN5, queue='log_aud_emo', routing_key='')
+channel.basic_consume(queue='log_aud_emo', on_message_callback=callback, auto_ack=True)
+
+
 channel.queue_declare(queue='log_text', durable=True)
 channel.queue_bind(exchange=EXCHANGE_IN2, queue='log_text', routing_key='')
 channel.basic_consume(queue='log_text', on_message_callback=callback, auto_ack=True)
@@ -170,6 +184,15 @@ channel.basic_consume(queue='log_video', on_message_callback=callback, auto_ack=
 channel.queue_declare(queue='log_self_report', durable=True)
 channel.queue_bind(exchange=EXCHANGE_IN_SELF_REPORT, queue='log_self_report', routing_key='')
 channel.basic_consume(queue='log_self_report', on_message_callback=callback, auto_ack=True)
+
+channel.queue_declare(queue='log_vid_fat', durable=True)
+channel.queue_bind(exchange=EXCHANGE_IN7, queue='log_vid_fat', routing_key='')
+channel.basic_consume(queue='log_vid_fat', on_message_callback=callback, auto_ack=True)
+
+channel.queue_declare(queue='log_aud_fat', durable=True)
+channel.queue_bind(exchange=EXCHANGE_IN8, queue='log_aud_fat', routing_key='')
+channel.basic_consume(queue='log_aud_fat', on_message_callback=callback, auto_ack=True)
+
 
 if __name__ == "__main__":
     # Запускаем режим ожидания прихода сообщений
