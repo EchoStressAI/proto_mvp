@@ -4,11 +4,11 @@
     <title>Авторизация</title>
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' />
 </head>
-<body>
+<body class="main-form">
   <div id="root">
     <div class="login-page ">
       <div>
-      <header><img class="logo" alt="SkyTrainer" src="images/logo.svg"><h2>Войдите, чтобы продолжить</h2></header>
+      <header><img class="logo" alt="SkyTrainer" src="{{ url_for('static', filename='images/logo.svg') }}"><h2>Войдите, чтобы продолжить</h2></header>
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
          <ul>

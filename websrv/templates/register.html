@@ -2,10 +2,14 @@
 <html>
 <head>
     <title>Регистрация</title>
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' />
 </head>
-<body>
-    <h2>Регистрация</h2>
-    {% with messages = get_flashed_messages(with_categories=true) %}
+<body class="main-form">
+  <div id="root">
+    <div class="login-page">
+      <div>
+      <header><img class="logo" alt="SkyTrainer" src="{{ url_for('static', filename='images/logo.svg') }}"><h2>Регистрация</h2></header>
+      {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
          <ul>
          {% for category, message in messages %}
@@ -14,15 +18,31 @@
          </ul>
       {% endif %}
     {% endwith %}
-    <form method="post">
-         <label>Имя пользователя:</label>
-         <input type="text" name="username" required><br>
-         <label>Как к вам обращаться:</label>
-         <input type="text" name="publicname" required><br>
-         <label>Пароль:</label>
-         <input type="password" name="password" required><br>
-         <input type="submit" value="Зарегистрироваться">
-    </form>
-    <p>Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
+      <form method="post">
+        <div>
+          <label>
+            <input class="input_login" placeholder="Имя пользователя" name="username" type="text" required>
+          </label>
+        </div>
+        <div>
+          <label>
+            <input class="input_login" placeholder="Как к вам обращаться" name="publicname" type="text" required>
+          </label>
+        </div>
+        <div>
+          <label>
+            <input class="input_login" placeholder="Пароль" type="password" name="password" required>
+          </label>
+        </div>
+        <div>
+            <button type="submit">Зарегистрироваться</button>
+        </div>
+        <div class="login_extra">
+          <p>Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 </body>
 </html>
