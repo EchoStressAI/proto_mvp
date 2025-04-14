@@ -32,6 +32,8 @@ cur = conn.cursor()
 #очереди RabbitMQ
 EXCHANGE = 'video'
 EXCHANGE_AUTH = 'auth'
+EXCHANGE_SELF_REPORT = 'self_report'
+
 EXCHANGE_IN = 'tts'
 
 
@@ -59,14 +61,13 @@ channel = connection.channel()
 
 channel.exchange_declare(exchange=EXCHANGE, exchange_type="fanout")
 channel.exchange_declare(exchange=EXCHANGE_AUTH, exchange_type="fanout")
+channel.exchange_declare(exchange=EXCHANGE_SELF_REPORT, exchange_type="fanout")
 
 # Папка для хранения данных
 DATA_DIR = "./data"
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
-#TODO сделать авторизацию и передавать id 
-user_id = 1
 # Декоратор для защиты маршрутов, требующих авторизации
 
 
@@ -91,10 +92,11 @@ def get_current_user_id():
 
 # Модель пользователя 
 class User:
-    def __init__(self, id=None, username=None, publicname=None,password_hash=None):
+    def __init__(self, id=None, username=None, publicname=None,sex = None,password_hash=None):
         self.id = id
         self.username = username
         self.publicname = publicname
+        self.sex = sex
         self.password_hash = password_hash
 
     def set_password(self, password):
@@ -107,14 +109,14 @@ class User:
         with conn.cursor() as cur:
             if self.id is None:
                 cur.execute(
-                    "INSERT INTO users (username, publicname, password_hash) VALUES (%s,%s, %s) RETURNING id",
-                    (self.username, self.publicname, self.password_hash)
+                    "INSERT INTO users (username, publicname, sex, password_hash) VALUES (%s,%s,%s,%s) RETURNING id",
+                    (self.username, self.publicname, self.sex, self.password_hash)
                 )
                 self.id = cur.fetchone()[0]
             else:
                 cur.execute(
-                    "UPDATE users SET username=%s, publicname=%s, password_hash=%s WHERE id=%s",
-                    (self.username, self.publicname, self.password_hash, self.id)
+                    "UPDATE users SET username=%s, sex=%s, publicname=%s, password_hash=%s WHERE id=%s",
+                    (self.username, self.publicname, self.sex, self.password_hash, self.id)
                 )
         conn.commit()
 
@@ -122,7 +124,7 @@ class User:
     def get_by_username(cls, username):
         logging.info(f"User {username} requested auth")
         with conn.cursor() as cur:
-            cur.execute("SELECT id, username, publicname, password_hash FROM users WHERE username= %s;", (str(username),))
+            cur.execute("SELECT id, username, publicname, sex, password_hash FROM users WHERE username= %s;", (str(username),))
             row = cur.fetchone()
             if row:
                 return cls(*row)
@@ -177,12 +179,13 @@ def login():
 def register():
     if request.method == "POST":
          publicname = request.form.get("publicname")
+         sex = request.form.get("sex")
          username = request.form.get("username")
          password = request.form.get("password")
          if  User.get_by_username(username):
               flash("Имя пользователя уже существует", "warning")
          else:
-              new_user = User(username=username,publicname=publicname)
+              new_user = User(username=username,publicname=publicname, sex=sex)
               new_user.set_password(password)
               new_user.save()
               flash("Регистрация успешна. Теперь выполните вход.", "success")
@@ -271,7 +274,7 @@ def upload_answer():
     try:
         """Принимает видео-ответ от пользователя"""
         logging.info("webserver -  start getting video.")    
-
+        user_id = get_current_user_id()
         video = request.files.get("video")
         if not video:
             return jsonify({"error": "Видео не найдено"}), 400
@@ -344,6 +347,31 @@ def consume_questions():
         if connection1 and connection1.is_open:
             connection1.close()
            
+@app.route("/self_report", methods=["GET", "POST"])
+@login_required
+def self_report():
+    if request.method == "POST":
+        form_data = request.form.to_dict()
+        form_data["user_id"] = get_current_user_id()
+        form_data["timestamp"] = time.mktime(time.gmtime())
+        logging.info(f"получен самоотчет: {form_data}")
+        try:
+            connection_pub = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
+            channel_pub = connection_pub.channel()
+            channel_pub.exchange_declare(exchange=EXCHANGE_SELF_REPORT, exchange_type="fanout")
+            channel_pub.basic_publish(
+                exchange=EXCHANGE_SELF_REPORT,
+                routing_key='',
+                body=json.dumps(form_data)
+            )
+            connection_pub.close()
+            logging.info("Ваш самоотчет отправлен успешно!")
+            flash("Ваш самоотчет отправлен успешно!", "success")
+        except Exception as e:
+            app.logger.error(f"Ошибка при отправке самоотчета: {e}")
+            flash("Ошибка при отправке самоотчета", "danger")
+        return redirect(url_for("index"))
+    return render_template("self_report.html")
 
 
         

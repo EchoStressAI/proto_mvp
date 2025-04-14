@@ -1,0 +1,15 @@
+# Используем базовый образ Python
+FROM python:3.10
+
+# Установим рабочую директорию внутри контейнера
+WORKDIR /app
+
+# Скопируем файлы приложения в контейнер
+COPY ./requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+COPY ./app.py ./
+
+# Запускаем приложение
+CMD ["python", "app.py"]
