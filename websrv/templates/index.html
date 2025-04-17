@@ -3,141 +3,157 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' /> -->
-  <link href="../static/css/styles.css" rel='stylesheet' type='text/css' />
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' />
   <title>Запись видео</title>
-  
 </head>
 <body class="index">
-  <h1>Видео-диалог</h1>
-  
-  <div>
-    <h2>Вопрос</h2>
-    <audio id="questionAudio" controls></audio>
-    <br>
-    <!-- Кнопка для загрузки вопроса -->
-    <button id="loadQuestion">Загрузить вопрос</button>
-    <!-- Новая кнопка для проверки наличия вопроса -->
-    <button id="checkQuestion">Есть вопрос?</button>
-    <!-- Кнопка подтверждения вопроса (удаления) -->
-    <button id="ackQuestion">Подтвердить вопрос</button>
-  </div>
+  <div class="container">
+    <header class="main_header">
+      <img class="logo" alt="EchoStressAI" src="{{ url_for('static', filename='images/logo.png') }}">
+      <a href="/logout" class="btn btn-primary btn-login">Выйти</a>
+    </header>
+    <div class="site-container">
+      <h1>
+        <a class="back_link" href="javascript:history.go(-1)"><img src="{{ url_for('static', filename='images/icon_back.svg') }}"></a> Видео-диалог
+      </h1>
 
-  <div>
-    <h2>Ваш ответ</h2>
-    <video id="preview" autoplay muted></video>
-    <video id="recorded" controls></video>
-    <div>
-      <button id="startRecording">Начать запись</button>
-      <button id="stopRecording" disabled>Остановить запись</button>
-      <button id="uploadAnswer" disabled>Отправить ответ</button>
+      <div class="site-container_block">
+        <h2>Вопрос</h2>
+        <audio id="questionAudio" controls></audio>
+        <br>
+        <!-- <button class="main-button" id="ackQuestion">Подтвердить вопрос</button> -->
+        <div id="ackQuestionResponce"></div>
+      </div>
+
+      <div class="site-container_block">
+        <h2>Ваш ответ</h2>
+        <div class="wrap_videos row">
+          <div class="col-xs-12 col-sm-6">
+            <!-- Объединенный элемент video -->
+            <video id="videoElement" autoplay muted controls></video>
+          </div>
+        </div>
+        <div>
+          <!-- Объединенная кнопка -->
+          <button class="main-button" id="toggleRecording">Начать запись</button>
+          <!-- <button class="main-button" id="uploadAnswer" disabled>Отправить ответ</button> -->
+        </div>
+      </div>
+
+      <script>
+        const questionAudio = document.getElementById('questionAudio');
+    //    const ackQuestionBtn = document.getElementById('ackQuestion');
+        const ackQuestionResponce = document.getElementById('ackQuestionResponce');
+        const videoElement = document.getElementById('videoElement');
+        const toggleRecordingBtn = document.getElementById('toggleRecording');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        let cameraStream;
+        let isRecording = false; // Флаг для отслеживания состояния записи
+
+        // Проверить наличие вопроса
+        document.addEventListener('DOMContentLoaded', async () => {
+          try {
+            const response = await fetch('/check_question');
+            if (response.ok) {
+              console.log('Вопрос найден!');
+              const getResponse = await fetch('/get_question');
+              if (getResponse.ok) {
+                const audioBlob = await getResponse.blob();
+                questionAudio.src = URL.createObjectURL(audioBlob);
+             //   ackQuestionBtn.disabled = false;
+
+                // Добавляем обработчик события "ended" для автоматического подтверждения вопроса
+                questionAudio.addEventListener('ended', async () => {
+                  try {
+                    console.log('Аудио закончилось!');
+                    const response = await fetch('/ack_question', { method: 'POST' });
+                    if (response.ok) {
+                      console.log('Вопрос подтвержден и удалён из очереди');
+                      ackQuestionResponce.textContent = "Вопрос подтвержден и удалён из очереди";
+                      questionAudio.src = "";
+                     // ackQuestionBtn.disabled = true;
+                    } else {
+                      ackQuestionResponce.textContent = "Ошибка подтверждения вопроса";
+                    }
+                  } catch (error) {
+                    console.error('Ошибка при подтверждении вопроса:', error);
+                    ackQuestionResponce.textContent = "Произошла ошибка при подтверждении вопроса.";
+                  }
+                });
+              } else {
+                alert('Ошибка загрузки аудиовопроса или вопросов нет');
+                questionAudio.src = "";
+            //    ackQuestionBtn.disabled = true;
+              }
+            } else {
+              alert('Вопросов нет!');
+            }
+          } catch (error) {
+            console.error('Ошибка при выполнении запроса:', error);
+            alert('Произошла ошибка при проверке вопроса.');
+          }
+        });
+
+        // Логика для объединенной кнопки
+        toggleRecordingBtn.addEventListener('click', async () => {
+          if (!isRecording) {
+            // Начать запись
+            try {
+              cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+              videoElement.srcObject = cameraStream;
+              videoElement.muted = true; // Мутим видео, чтобы не было эха
+              recordedChunks = [];
+                            // mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/webm' });
+                            mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
+
+              mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                  recordedChunks.push(event.data);
+                }
+              };
+
+              mediaRecorder.start();
+              toggleRecordingBtn.textContent = "Остановить запись";
+              isRecording = true;
+            } catch (error) {
+              console.error('Ошибка доступа к камере или микрофону:', error);
+              alert('Ошибка доступа к камере или микрофону. Проверьте настройки.');
+            }
+          } else {
+            // Остановить запись
+            mediaRecorder.stop();
+            mediaRecorder.onstop = async () => {
+              const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+              videoElement.srcObject = null; // Очищаем поток с камеры
+              videoElement.src = URL.createObjectURL(videoBlob); // Устанавливаем записанное видео
+              videoElement.controls = true; // Включаем управление для воспроизведения
+              videoElement.muted = false; // Размутим видео
+              cameraStream.getTracks().forEach((track) => track.stop());
+              toggleRecordingBtn.textContent = "Начать запись";
+              isRecording = false;
+
+              // Отправляем видео на сервер
+              const formData = new FormData();
+              formData.append('video', videoBlob, 'answer.webm');
+              try {
+                const response = await fetch('/upload_answer', { method: 'POST', body: formData });
+                if (response.ok) {
+                  alert('Видео успешно отправлено!');
+                } else {
+                  alert('Ошибка отправки видео');
+                }
+              } catch (error) {
+                console.error('Ошибка при отправке видео:', error);
+                alert('Произошла ошибка при отправке видео.');
+              }
+            };
+          }
+        });
+      </script>
     </div>
   </div>
-
-  <script>
-    const questionAudio = document.getElementById('questionAudio');
-    const loadQuestionBtn = document.getElementById('loadQuestion');
-    const checkQuestionBtn = document.getElementById('checkQuestion');
-    const ackQuestionBtn = document.getElementById('ackQuestion');
-
-    const previewVideo = document.getElementById('preview');
-    const recordedVideo = document.getElementById('recorded');
-    const startRecordingBtn = document.getElementById('startRecording');
-    const stopRecordingBtn = document.getElementById('stopRecording');
-    const uploadAnswerBtn = document.getElementById('uploadAnswer');
-
-    let mediaRecorder;
-    let recordedChunks = [];
-    let cameraStream;
-
-    // Загрузить аудиовопрос с сервера
-    loadQuestionBtn.addEventListener('click', async () => {
-      const response = await fetch('/get_question');
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        questionAudio.src = URL.createObjectURL(audioBlob);
-        ackQuestionBtn.disabled = false;
-      } else {
-        alert('Ошибка загрузки аудиовопроса или вопросов нет');
-        questionAudio.src = "";
-        ackQuestionBtn.disabled = true;
-      }
-    });
-
-    // Проверить наличие вопроса
-    checkQuestionBtn.addEventListener('click', async () => {
-      // Выполняем запрос на получение вопроса без загрузки в аудио
-      const response = await fetch('/check_question');
-      if (response.ok) {
-        alert('Вопрос найден!');
-      } else {
-        alert('Вопросов нет!');
-      }
-    });
-
-    // Подтвердить (ack) вопрос после его обработки с проверкой наличия
-    ackQuestionBtn.addEventListener('click', async () => {
-      if (!questionAudio.src) {
-        alert('Вопрос не загружен. Пожалуйста, загрузите вопрос.');
-        return;
-      }
-      const response = await fetch('/ack_question', { method: 'POST' });
-      if (response.ok) {
-        alert('Вопрос подтвержден и удалён из очереди');
-        questionAudio.src = "";
-        ackQuestionBtn.disabled = true;
-      } else {
-        alert('Ошибка подтверждения вопроса');
-      }
-    });
-
-    // Начать запись
-    startRecordingBtn.addEventListener('click', async () => {
-      try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        previewVideo.srcObject = cameraStream;
-        recordedChunks = [];
-        mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            recordedChunks.push(event.data);
-          }
-        };
-        mediaRecorder.start();
-        startRecordingBtn.disabled = true;
-        stopRecordingBtn.disabled = false;
-        uploadAnswerBtn.disabled = true;
-      } catch (error) {
-        console.error('Ошибка доступа к камере или микрофону:', error);
-        alert('Ошибка доступа к камере или микрофону. Проверьте настройки.');
-      }
-    });
-
-    // Остановить запись
-    stopRecordingBtn.addEventListener('click', () => {
-      mediaRecorder.stop();
-      mediaRecorder.onstop = () => {
-        const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
-        recordedVideo.src = URL.createObjectURL(videoBlob);
-        previewVideo.srcObject = null;
-        cameraStream.getTracks().forEach((track) => track.stop());
-        stopRecordingBtn.disabled = true;
-        uploadAnswerBtn.disabled = false;
-      };
-    });
-
-    // Отправить видео на сервер
-    uploadAnswerBtn.addEventListener('click', async () => {
-      const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
-      const formData = new FormData();
-      formData.append('video', videoBlob, 'answer.webm');
-      const response = await fetch('/upload_answer', { method: 'POST', body: formData });
-      if (response.ok) {
-        alert('Видео успешно отправлено!');
-      } else {
-        alert('Ошибка отправки видео');
-      }
-    });
-  </script>
 </body>
 </html>

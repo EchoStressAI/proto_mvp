@@ -1,14 +1,19 @@
-﻿<!doctype html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Регистрация</title>
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' />
+
+    <!-- <link href="../static/css/styles.css" rel='stylesheet' type='text/css' /> -->
 </head>
 <body class="main-form">
-  <div id="root">
-    <div class="login-page">
+  <div class="container">
+    <div class="site-container login-container">
       <div>
-      <header><img class="logo" alt="SkyTrainer" src="{{ url_for('static', filename='images/logo.svg') }}"><h2>Регистрация</h2></header>
+      <header class="login-title"><img class="logo" alt="EchoStressAI" src="{{ url_for('static', filename='images/logo.png') }}"><h2>Регистрация</h2></header>
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
          <ul>
@@ -19,25 +24,19 @@
       {% endif %}
     {% endwith %}
       <form method="post">
-        <div>
-          <label>
+        <div class="mb-3">
             <input class="input_login" placeholder="Имя пользователя" name="username" type="text" required>
-          </label>
         </div>
-        <div>
-          <label>
+        <div class="mb-3">
             <input class="input_login" placeholder="Как к вам обращаться" name="publicname" type="text" required>
-          </label>
         </div>
-        <div>
-          <label>
+        <div class="mb-3">
             <input class="input_login" placeholder="Пароль" type="password" name="password" required>
-          </label>
         </div>
-        <div>
-            <button type="submit">Зарегистрироваться</button>
+        <div class="mb-3">
+            <button type="submit" class="btn btn-primary btn-login">Зарегистрироваться</button>
         </div>
-        <div class="login_extra">
+        <div class="login_extra register_extra">
           <p>Уже есть аккаунт? <a href="{{ url_for('login') }}">Войти</a></p>
         </div>
       </form>

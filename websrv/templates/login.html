@@ -1,14 +1,19 @@
-﻿<!doctype html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="ru">
 <head>
-    <title>Авторизация</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Форма входа</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' />
+    <!-- <link href="../static/css/styles.css" rel='stylesheet' type='text/css' /> -->
 </head>
 <body class="main-form">
-  <div id="root">
-    <div class="login-page ">
-      <div>
-      <header><img class="logo" alt="SkyTrainer" src="{{ url_for('static', filename='images/logo.svg') }}"><h2>Войдите, чтобы продолжить</h2></header>
+    <div class="container">
+        <div class="site-container login-container">
+            <!-- <h2 class="login-title">Вход в систему</h2> -->
+                  <header class="login-title"><img class="logo" alt="EchoStressAI" src="{{ url_for('static', filename='images/logo.png') }}"><h2>Вход в систему</h2></header>
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
          <ul>
@@ -18,27 +23,29 @@
          </ul>
       {% endif %}
     {% endwith %}
-      <form method="post" class="form1">
-        <div>
-          <label>
-            <input class="input_login" placeholder="Email" name="username" type="text" required>
-          </label>
+            <form method="post">
+              <div class="mb-3">
+                <input class="input_login" placeholder="Имя пользователя" name="username" type="text" required>
+            </div>
+            <div class="mb-3">
+                <input class="input_login" placeholder="Пароль" type="password" name="password" required>
+            </div>
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary btn-login">Войти</button>
+            </div>
+            <div class="login_extra">
+              <span>
+                <input type="checkbox" checked="" name="checkbox"> <span> Запомнить </span>
+              </span>
+            <span>
+              <a href="{{ url_for('register') }}">Зарегистрироваться</a></span>
+            </div>
+    
+            </form>
         </div>
-        <div>
-          <label>
-            <input class="input_login" placeholder="Пароль" type="password" name="password" required>
-          </label>
-        </div>
-        <div>
-            <button type="submit">Войти</button>
-        </div>
-        <div class="login_extra"><span><input type="checkbox" checked="" name="checkbox"> <span> Запомнить </span></span><span>
-          <a href="{{ url_for('register') }}">Зарегистрироваться</a></span>
-        </div>
-      </form>
     </div>
-  </div>
-</div>
 
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+<!--    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script> -->
 </body>
 </html>
