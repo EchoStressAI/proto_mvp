@@ -88,6 +88,8 @@ services:
       - "5000:5000"   # единственный внешний порт
     volumes:
       - ./data:/app/data
+      - ./websrv/templates:/app/templates
+      - ./websrv/static:/app/static
     restart: always
     environment:
       FLASK_PORT: 5000

@@ -106,19 +106,21 @@ class User:
         return check_password_hash(self.password_hash, password)
 
     def save(self):
-        with conn.cursor() as cur:
-            if self.id is None:
-                cur.execute(
-                    "INSERT INTO users (username, publicname, sex, password_hash) VALUES (%s,%s,%s,%s) RETURNING id",
-                    (self.username, self.publicname, self.sex, self.password_hash)
-                )
-                self.id = cur.fetchone()[0]
-            else:
-                cur.execute(
-                    "UPDATE users SET username=%s, sex=%s, publicname=%s, password_hash=%s WHERE id=%s",
-                    (self.username, self.publicname, self.sex, self.password_hash, self.id)
-                )
-        conn.commit()
+        try:
+            with conn.cursor() as cur:
+                if self.id is None:
+                    cur.execute(
+                        "INSERT INTO users (username, publicname, sex, password_hash) VALUES (%s,%s,%s,%s) RETURNING id",
+                        (self.username, self.publicname, self.sex, self.password_hash)
+                    )
+                    self.id = cur.fetchone()[0]
+                else:
+                    cur.execute(
+                        "UPDATE users SET username=%s, sex=%s, publicname=%s, password_hash=%s WHERE id=%s",
+                        (self.username, self.publicname, self.sex, self.password_hash, self.id)
+                    )
+        finally:
+            conn.commit()
 
     @classmethod
     def get_by_username(cls, username):
