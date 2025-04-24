@@ -5,7 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' />
-  <title>Запись видео</title>
+  <title>Видео-диалог</title>
+  <style>
+    /* Центрирование GIF */
+    #idleGif, #questionGif, #speakingGif {
+      display: block;
+      margin: 0 auto 10px;
+      max-width: 100%;
+    }
+    /* Скрыть аудио-проигрыватель */
+    #questionAudio {
+      display: none;
+    }
+  </style>
 </head>
 <body class="index">
   <div class="container">
@@ -20,166 +32,111 @@
 
       <div class="site-container_block">
         <h2>Вопрос</h2>
-        <audio id="questionAudio" controls></audio>
-        <br>
-        <!-- <button class="main-button" id="ackQuestion">Подтвердить вопрос</button> -->
+        <!-- GIF для разных состояний -->
+        <img id="idleGif" src="{{ url_for('static', filename='images/idle.gif') }}" alt="Ожидание вопроса" style="display:none;">
+        <img id="questionGif" src="{{ url_for('static', filename='images/question.gif') }}" alt="Загрузка вопроса..." style="display:none;">
+        <img id="speakingGif" src="{{ url_for('static', filename='images/ActiveListening.gif') }}" alt="Пользователь отвечает" style="display:none;">
+        <audio id="questionAudio"></audio>
         <div id="ackQuestionResponce"></div>
       </div>
 
       <div class="site-container_block">
         <h2>Ваш ответ</h2>
-        <div class="wrap_videos row">
-          <div class="col-xs-12 col-sm-6">
-            <!-- Объединенный элемент video -->
-            <video id="videoElement" autoplay muted controls></video>
-          </div>
-        </div>
         <div>
-          <!-- Объединенная кнопка -->
           <button class="main-button" id="toggleRecording">Начать запись</button>
-          <!-- <button class="main-button" id="uploadAnswer" disabled>Отправить ответ</button> -->
         </div>
       </div>
 
       <script>
+        const idleGif = document.getElementById('idleGif');
+        const questionGif = document.getElementById('questionGif');
+        const speakingGif = document.getElementById('speakingGif');
         const questionAudio = document.getElementById('questionAudio');
-    //    const ackQuestionBtn = document.getElementById('ackQuestion');
-        const ackQuestionResponce = document.getElementById('ackQuestionResponce');
-        const videoElement = document.getElementById('videoElement');
         const toggleRecordingBtn = document.getElementById('toggleRecording');
 
         let mediaRecorder;
         let recordedChunks = [];
         let cameraStream;
-        let isRecording = false; // Флаг для отслеживания состояния записи
+        let isRecording = false;
 
-        // Проверить наличие вопроса
+        // По окончании аудио вопроса возвращаем idle GIF
+        questionAudio.addEventListener('ended', () => {
+          questionGif.style.display = 'none';
+          idleGif.style.display = 'block';
+        });
+
+        // Проверка вопроса при загрузке
         document.addEventListener('DOMContentLoaded', async () => {
+          idleGif.style.display = 'block';
           try {
-            const response = await fetch('/check_question');
-            if (response.ok) {
-              console.log('Вопрос найден!');
-              const getResponse = await fetch('/get_question');
-              if (getResponse.ok) {
-                const audioBlob = await getResponse.blob();
+            const resp = await fetch('/check_question');
+            if (resp.ok) {
+              const getQ = await fetch('/get_question');
+              if (getQ.ok) {
+                const audioBlob = await getQ.blob();
                 questionAudio.src = URL.createObjectURL(audioBlob);
-             //   ackQuestionBtn.disabled = false;
-
-                // Добавляем обработчик события "ended" для автоматического подтверждения вопроса
-                questionAudio.addEventListener('ended', async () => {
-                  try {
-                    console.log('Аудио закончилось!');
-                    const response = await fetch('/ack_question', { method: 'POST' });
-                    if (response.ok) {
-                      console.log('Вопрос подтвержден и удалён из очереди');
-                      ackQuestionResponce.textContent = "Вопрос подтвержден и удалён из очереди";
-                      questionAudio.src = "";
-                     // ackQuestionBtn.disabled = true;
-                    } else {
-                      ackQuestionResponce.textContent = "Ошибка подтверждения вопроса";
-                    }
-                  } catch (error) {
-                    console.error('Ошибка при подтверждении вопроса:', error);
-                    ackQuestionResponce.textContent = "Произошла ошибка при подтверждении вопроса.";
-                  }
-                });
-              } else {
-                alert('Ошибка загрузки аудиовопроса или вопросов нет');
-                questionAudio.src = "";
-            //    ackQuestionBtn.disabled = true;
               }
-            } else {
-              alert('Вопросов нет!');
             }
-          } catch (error) {
-            console.error('Ошибка при выполнении запроса:', error);
-            alert('Произошла ошибка при проверке вопроса.');
+          } catch (e) {
+            console.error('Ошибка при проверке вопроса:', e);
           }
         });
 
-        
-// Проверка наличия вопросов по таймеру
-async function checkAndPlayQuestion() {
-  try {
-    const response = await fetch('/check_question');
-    if (response.ok) {
-      console.log('Вопрос найден!');
-      const getResponse = await fetch('/get_question');
-      if (getResponse.ok) {
-        const audioBlob = await getResponse.blob();
-        questionAudio.src = URL.createObjectURL(audioBlob);
-        questionAudio.play().catch(e => console.warn("Автовоспроизведение заблокировано:", e));
-
-        // Сразу подтверждаем
-        const ackResponse = await fetch('/ack_question', { method: 'POST' });
-        if (ackResponse.ok) {
-          console.log('Вопрос подтвержден');
-          ackQuestionResponce.textContent = "Вопрос подтвержден и удалён из очереди";
-        } else {
-          ackQuestionResponce.textContent = "Ошибка подтверждения вопроса";
+        // Таймер для новых вопросов
+        async function checkAndPlayQuestion() {
+          try {
+            const resp = await fetch('/check_question');
+            if (resp.ok) {
+              const getQ = await fetch('/get_question');
+              if (getQ.ok) {
+                const audioBlob = await getQ.blob();
+                idleGif.style.display = 'none';
+                questionGif.style.display = 'block';
+                questionAudio.src = URL.createObjectURL(audioBlob);
+                questionAudio.play().catch(e => console.warn('Автовоспроизведение заблокировано:', e));
+                await fetch('/ack_question', { method: 'POST' });
+              }
+            }
+          } catch (e) {
+            console.error('Ошибка при проверке вопроса:', e);
+          }
         }
-      }
-    }
-  } catch (error) {
-    console.error('Ошибка при проверке вопроса:', error);
-  }
-}
+        setInterval(checkAndPlayQuestion, 1000);
 
-// Запуск таймера: проверка каждые 1 секунд
-setInterval(checkAndPlayQuestion, 1000);
-
-
-        // Логика для объединенной кнопки
+        // Кнопка записи
         toggleRecordingBtn.addEventListener('click', async () => {
           if (!isRecording) {
-            // Начать запись
             try {
               cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-              videoElement.srcObject = cameraStream;
-              videoElement.muted = true; // Мутим видео, чтобы не было эха
               recordedChunks = [];
-                            // mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/webm' });
-                            mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
+              mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
 
-              mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                  recordedChunks.push(event.data);
-                }
-              };
-
+              mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
               mediaRecorder.start();
-              toggleRecordingBtn.textContent = "Остановить запись";
+              toggleRecordingBtn.textContent = 'Остановить запись';
               isRecording = true;
-            } catch (error) {
-              console.error('Ошибка доступа к камере или микрофону:', error);
+              idleGif.style.display = 'none';
+              questionGif.style.display = 'none';
+              speakingGif.style.display = 'block';
+            } catch (e) {
               alert('Ошибка доступа к камере или микрофону. Проверьте настройки.');
             }
           } else {
-            // Остановить запись
             mediaRecorder.stop();
             mediaRecorder.onstop = async () => {
-              const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
-              videoElement.srcObject = null; // Очищаем поток с камеры
-              videoElement.src = URL.createObjectURL(videoBlob); // Устанавливаем записанное видео
-              videoElement.controls = true; // Включаем управление для воспроизведения
-              videoElement.muted = false; // Размутим видео
-              cameraStream.getTracks().forEach((track) => track.stop());
-              toggleRecordingBtn.textContent = "Начать запись";
+              cameraStream.getTracks().forEach(t => t.stop());
+              toggleRecordingBtn.textContent = 'Начать запись';
               isRecording = false;
+              speakingGif.style.display = 'none';
+              idleGif.style.display = 'block';
 
-              // Отправляем видео на сервер
+              const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
               const formData = new FormData();
               formData.append('video', videoBlob, 'answer.webm');
               try {
-                const response = await fetch('/upload_answer', { method: 'POST', body: formData });
-                if (response.ok) {
-                  alert('Видео успешно отправлено!');
-                } else {
-                  alert('Ошибка отправки видео');
-                }
-              } catch (error) {
-                console.error('Ошибка при отправке видео:', error);
-                alert('Произошла ошибка при отправке видео.');
+                await fetch('/upload_answer', { method: 'POST', body: formData });
+              } catch (e) {
+                console.error('Ошибка при отправке видео:', e);
               }
             };
           }
