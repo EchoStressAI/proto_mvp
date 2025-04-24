@@ -97,6 +97,38 @@
           }
         });
 
+        
+// Проверка наличия вопросов по таймеру
+async function checkAndPlayQuestion() {
+  try {
+    const response = await fetch('/check_question');
+    if (response.ok) {
+      console.log('Вопрос найден!');
+      const getResponse = await fetch('/get_question');
+      if (getResponse.ok) {
+        const audioBlob = await getResponse.blob();
+        questionAudio.src = URL.createObjectURL(audioBlob);
+        questionAudio.play().catch(e => console.warn("Автовоспроизведение заблокировано:", e));
+
+        // Сразу подтверждаем
+        const ackResponse = await fetch('/ack_question', { method: 'POST' });
+        if (ackResponse.ok) {
+          console.log('Вопрос подтвержден');
+          ackQuestionResponce.textContent = "Вопрос подтвержден и удалён из очереди";
+        } else {
+          ackQuestionResponce.textContent = "Ошибка подтверждения вопроса";
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка при проверке вопроса:', error);
+  }
+}
+
+// Запуск таймера: проверка каждые 1 секунд
+setInterval(checkAndPlayQuestion, 1000);
+
+
         // Логика для объединенной кнопки
         toggleRecordingBtn.addEventListener('click', async () => {
           if (!isRecording) {
