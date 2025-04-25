@@ -96,7 +96,7 @@ else:
 
 
 # ЗАГРУЗКА СПИСКА ВОПРОСОВ ИЗ ФАЙЛА
-SURVEY_QUESTIONS_PATH = os.path.join(DATA_DIR, "survey_questions.txt")
+
 
 def load_survey_questions(path):
     if not os.path.exists(path):
@@ -107,8 +107,12 @@ def load_survey_questions(path):
     logging.info(f"Загружено {len(questions)} вопросов из файла.")
     return questions
 
-SURVEY_QUESTIONS = load_survey_questions(SURVEY_QUESTIONS_PATH)
-logging.info(f"Загружено {SURVEY_QUESTIONS} вопросы из файла.")
+
+MORNING_PATH = os.path.join(DATA_DIR, "survey_morning_questions.txt")
+EVENING_PATH = os.path.join(DATA_DIR, "survey_evening_questions.txt")
+SURVEY_QUESTIONS_MORNING = load_survey_questions(MORNING_PATH)
+SURVEY_QUESTIONS_EVENING = load_survey_questions(EVENING_PATH)
+logging.info(f"Загружены  вопросы из файлов.")
 
 # Хранилище состояния опроса
 SURVEY_STATE = {}
@@ -127,24 +131,48 @@ def get_rasa_intent(text: str, sender_id: str = "default") -> dict:
         logging.error(f"Ошибка при запросе к Rasa: {e}")
         return {"intent": {"name": "unknown", "confidence": 0}}
 
-# логика обработки опроса
-def handle_survey(user_id: str, text: str) -> str:
-    state = SURVEY_STATE.get(user_id, {"step": 0, "answers": []})
 
-    # Если это не первый шаг — сохраняем предыдущий ответ
+# логика обработки опроса с учётом утреннего/вечернего интента
+def handle_survey(user_id: str, text: str, intent: str) -> str:
+    # получаем текущее состояние (или None, если ещё не начинали опрос)
+    state = SURVEY_STATE.get(user_id)
+
+    # если пользователь ещё не выбрал тип опроса — разбираем intent
+    if state is None:
+        if intent == "select_morning":
+            survey_type = "утренний"
+            questions = SURVEY_QUESTIONS_MORNING
+        elif intent == "select_evening":
+            survey_type = "вечерний"
+            questions = SURVEY_QUESTIONS_EVENING
+        else:
+            return "Пожалуйста, скажите  «утро» (перед сменой) или «вечер» (после смены)."
+
+        if not questions:
+            return f"Вопросы для {survey_type} опроса пока не загружены."
+
+        # инициализируем состояние опроса
+        state = {
+            "type": survey_type,
+            "questions": questions,
+            "step": 0,
+            "answers": []
+        }
+        SURVEY_STATE[user_id] = state
+
+    # сохраняем ответ на предыдущий вопрос (если это не первый шаг)
     if state["step"] > 0:
         state["answers"].append(text)
 
-    if state["step"] < len(SURVEY_QUESTIONS):
-        question = SURVEY_QUESTIONS[state["step"]]
+    # если ещё остались вопросы — задаём следующий
+    if state["step"] < len(state["questions"]):
+        question = state["questions"][state["step"]]
         state["step"] += 1
-        SURVEY_STATE[user_id] = state
         return question
-    else:
-        del SURVEY_STATE[user_id]
-        return "Спасибо за прохождение опроса!"
 
-
+    # иначе завершаем опрос
+    del SURVEY_STATE[user_id]
+    return f"Спасибо за прохождение {state['type']} опроса!"
 
 
 
@@ -160,8 +188,8 @@ def callback(ch, method, properties, body):
 
     logging.info(f"Распознан интент: {intent}")
 
-    if intent == "start_survey" or user_id in SURVEY_STATE:
-        response_text = handle_survey(user_id, user_text)
+    if intent in ("select_morning", "select_evening") or user_id in SURVEY_STATE:
+        response_text = handle_survey(user_id, user_text, intent)
     elif intent == "ask_llm":
         response_text = get_LLM_answer(user_text)
     else:
@@ -180,7 +208,7 @@ def callback(ch, method, properties, body):
 def callback_auth(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
-    content = get_LLM_answer(f"К тебе пришел {message['publicname']} попривествуй его") 
+    content = get_LLM_answer(f"К тебе пришел {message['publicname']} попривествуй его и спроси он переде сменой или после смены") 
     logging.info(f'ответ модели - {content}')
     message['text'] = content    
     logging.info(f'сообщение к отправке: {message}')
