@@ -208,7 +208,7 @@ def callback(ch, method, properties, body):
 def callback_auth(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
-    content = get_LLM_answer(f"К тебе пришел {message['publicname']} попривествуй его и спроси он переде сменой или после смены") 
+    content = f"Здравствуйте {message['publicname']} рад вас привестствовать. Сейчас утро или вечер?"   #get_LLM_answer(f"К тебе пришел {message['publicname']} попривествуй его и спроси он переде сменой или после смены") 
     logging.info(f'ответ модели - {content}')
     message['text'] = content    
     logging.info(f'сообщение к отправке: {message}')
