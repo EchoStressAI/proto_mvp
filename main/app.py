@@ -133,20 +133,20 @@ def get_rasa_intent(text: str, sender_id: str = "default") -> dict:
 
 
 # логика обработки опроса с учётом утреннего/вечернего интента
-def handle_survey(user_id: str, text: str, intent: str) -> str:
+def handle_survey(user_id: str, text: str, workshift: str) -> str:
     # получаем текущее состояние (или None, если ещё не начинали опрос)
     state = SURVEY_STATE.get(user_id)
-
+    logging.info(f"Статус: {state}")
     # если пользователь ещё не выбрал тип опроса — разбираем intent
     if state is None:
-        if intent == "select_morning":
-            survey_type = "утренний"
+        if workshift == "before":
+            survey_type = "перед сменой"
             questions = SURVEY_QUESTIONS_MORNING
-        elif intent == "select_evening":
-            survey_type = "вечерний"
-            questions = SURVEY_QUESTIONS_EVENING
         else:
-            return "Пожалуйста, скажите  «утро» (перед сменой) или «вечер» (после смены)."
+            survey_type = "после смены"
+            questions = SURVEY_QUESTIONS_EVENING
+
+        logging.info(f"Статус: {state}")
 
         if not questions:
             return f"Вопросы для {survey_type} опроса пока не загружены."
@@ -159,6 +159,8 @@ def handle_survey(user_id: str, text: str, intent: str) -> str:
             "answers": []
         }
         SURVEY_STATE[user_id] = state
+        logging.info(f"Статус: {state}")
+    logging.info(f"Статус общий : {SURVEY_STATE}")
 
     # сохраняем ответ на предыдущий вопрос (если это не первый шаг)
     if state["step"] > 0:
@@ -170,13 +172,15 @@ def handle_survey(user_id: str, text: str, intent: str) -> str:
         state["step"] += 1
         return question
 
-
+    
     # иначе завершаем опрос
-    res = 'был рад пообщаться'
-    if state['type'] == "вечерний":
-        res =  'Благодарим Вас за работу и за прохождение опроса.Он поможет отслеживать самочувствие в динамике и вовремя предотвращать переутомление и выгорание. Желаем вам хорошо отдохнуть до следующей смены!  но я готов к общению'
-    elif state['type'] == "утренний":
-        res = "Благодарим Вас за работу и за прохождение опроса.Он поможет отслеживать самочувствие в динамике и вовремя предотвращать переутомление и выгорание. Хорошей смены!"
+    res = 'был рад пообщаться,  '
+    if state['type'] == "после смены":
+        # TODO добавить работу LLM c контекстом опроса
+        res =  'Было ли что-то во время смены, что вызвало сильную эмоциональную реакцию? Расскажите, как это повлияло на вас'
+    elif state['type'] == "перед сменой":
+        # TODO добавить работу LLM c контекстом опроса
+        res = "Было ли что-то со времени нашей последней встречи, что вызвало сильную эмоциональную реакцию? Расскажите, как это повлияло на вас"
     
     del SURVEY_STATE[user_id]
     return res
@@ -189,13 +193,15 @@ def callback(ch, method, properties, body):
     message = json.loads(body)
     user_text = message.get("text", "")
     user_id = str(message.get("user_id", "default"))
-
+    
     rasa_result = get_rasa_intent(user_text, sender_id=user_id)
     intent = rasa_result.get("intent", {}).get("name", "unknown")
 
     logging.info(f"Распознан интент: {intent}")
 
-    if intent in ("select_morning", "select_evening") or user_id in SURVEY_STATE:
+    
+    if  user_id in SURVEY_STATE:
+        logging.info(f"in survay")
         response_text = handle_survey(user_id, user_text, intent)
     elif intent == "ask_llm":
         response_text = get_LLM_answer(user_text)
@@ -215,7 +221,14 @@ def callback(ch, method, properties, body):
 def callback_auth(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
-    content = f"Здравствуйте {message['publicname']} рад вас привестствовать. Сейчас утро или вечер?"   #get_LLM_answer(f"К тебе пришел {message['publicname']} попривествуй его и спроси он переде сменой или после смены") 
+    user_id = str(message['user_id'])
+    workshift = message['work']
+    if workshift == 'before':
+        content = f"Доброе утро, {message['publicname']}. Давайте обсудим ваше самочувствие. "
+    else:
+        content = f"Добрый вечер, {message['publicname']}. Давайте пообщаемся о вашем состоянии. "
+    content += handle_survey(user_id, '', workshift)
+
     logging.info(f'ответ модели - {content}')
     message['text'] = content    
     logging.info(f'сообщение к отправке: {message}')

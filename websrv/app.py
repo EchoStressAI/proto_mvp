@@ -150,6 +150,10 @@ def login():
     if request.method == "POST":
          username = request.form.get("username")
          password = request.form.get("password")
+         work = request.form.get("work")
+         if work is None:
+           flash("Не задано до или после смены!", "danger")
+           return render_template("login.html")
          user = User.get_by_username(username)
          if user and user.check_password(password):
             session["user_id"] = user.id
@@ -160,6 +164,7 @@ def login():
                 'user_id': user.id,
                 'username': username,
                 'publicname': user.publicname,
+                'work': work,
                 'timestamp':tstamp
             }           
             connection_pub = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))

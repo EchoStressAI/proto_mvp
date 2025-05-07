@@ -6,36 +6,24 @@
   <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' />
   <title>Видео-диалог</title>
-  <style>
-    /* Центрирование GIF */
-    #idleGif, #questionGif, #speakingGif {
-      display: block;
-      margin: 0 auto 10px;
-      max-width: 100%;
-    }
-    /* Скрыть аудио-проигрыватель */
-    #questionAudio {
-      display: none;
-    }
-  </style>
 </head>
 <body class="index">
   <div class="container">
     <header class="main_header">
       <img class="logo" alt="EchoStressAI" src="{{ url_for('static', filename='images/logo.png') }}">
-      <a href="/logout" class="btn btn-primary btn-login">Выйти</a>
+	  <div>
+		  <button class="main-button" id="PauseRecording" disabled>Пауза</button>
+		  <button class="main-button" id="toggleRecording1" disabled>Начать запись</button>
+		  <a href="/logout" class="btn-primary btn-login">Выйти</a>
+	  </div>
     </header>
     <div class="site-container">
-      <h1>
-        <a class="back_link" href="javascript:history.go(-1)"><img src="{{ url_for('static', filename='images/icon_back.svg') }}"></a> Видео-диалог
-      </h1>
-
       <div class="site-container_block">
-        <h2>Вопрос</h2>
+        <h4 class="main_message">Роман, приветствую на опросе перед началом смены! <button class="main-button" id="toggleRecording2" >Начать диалог</button></h4> 
         <!-- GIF для разных состояний -->
-        <img id="idleGif" src="{{ url_for('static', filename='images/idle.gif') }}" alt="Ожидание вопроса" style="display:none;">
-        <img id="questionGif" src="{{ url_for('static', filename='images/question.gif') }}" alt="Загрузка вопроса..." style="display:none;">
-        <img id="speakingGif" src="{{ url_for('static', filename='images/ActiveListening.gif') }}" alt="Пользователь отвечает" style="display:none;">
+        <img class="ani_gif" id="idleGif" src="{{ url_for('static', filename='images/idle.gif') }}" alt="Ожидание вопроса" style="display:none;">
+        <img class="ani_gif" id="questionGif" src="{{ url_for('static', filename='images/question.gif') }}" alt="Загрузка вопроса..." style="display:none;">
+        <img class="ani_gif" id="speakingGif" src="{{ url_for('static', filename='images/ActiveListening.gif') }}" alt="Пользователь отвечает" style="display:none;">
         <audio id="questionAudio"></audio>
         <div id="ackQuestionResponce"></div>
       </div>
@@ -43,7 +31,8 @@
       <div class="site-container_block">
         <h2>Ваш ответ</h2>
         <div>
-          <button class="main-button" id="toggleRecording">Начать запись</button>
+		<img class="logo" src="{{ url_for('static', filename='images/Microphone.svg') }}">
+          <button class="main-button" id="toggleRecording">Начать запись</button> Нажмите, чтобы ответить ассистенту
         </div>
       </div>
 
