@@ -34,6 +34,8 @@ services:
       POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: echodatabase
     # Удалён маппинг порта
+    ports:
+      - "5430:5432"
     volumes:
       - ./data/pg_data:/var/lib/postgresql/data
       - ./init_scripts:/docker-entrypoint-initdb.d
@@ -46,6 +48,7 @@ services:
       start_period: 5s
     networks:
       - internal
+      - public
 
   rasa-nlu:
     image: rasa/rasa:3.6.4
@@ -88,6 +91,7 @@ services:
       - "5000:5000"   # единственный внешний порт
     volumes:
       - ./data:/app/data
+      - ./secrets/serts:/app/certs
       - ./websrv/templates:/app/templates
       - ./websrv/static:/app/static
     restart: always
@@ -135,7 +139,10 @@ services:
   videoemo:
     build: ./videoemo
     volumes:
+      - ./models:/app/models
       - ./data:/app/data
+    environment:
+      - MODELS_DIR=/app/models
     restart: always
     depends_on:
       - rabbitmq
@@ -188,10 +195,12 @@ services:
     restart: always
     volumes:
       - ./data:/app/data
+      - ./models:/app/model
     depends_on:
       - rabbitmq
       - web-server
-      - video2sound
+      - audioemo
+      - audfeat
     networks:
       - internal
 

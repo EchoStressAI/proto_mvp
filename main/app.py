@@ -177,10 +177,10 @@ def handle_survey(user_id: str, text: str, workshift: str) -> str:
     res = 'был рад пообщаться,  '
     if state['type'] == "после смены":
         # TODO добавить работу LLM c контекстом опроса
-        res =  'Было ли что-то во время смены, что вызвало сильную эмоциональную реакцию? Расскажите, как это повлияло на вас'
+        res =  'Было ли что-то во время смены, что вызвало сильную эмоциональную реакцию? Расскажите, как это повлияло на вас. Если у вас не осталось вопросов попрощайтесь с ассистентом'
     elif state['type'] == "перед сменой":
         # TODO добавить работу LLM c контекстом опроса
-        res = "Было ли что-то со времени нашей последней встречи, что вызвало сильную эмоциональную реакцию? Расскажите, как это повлияло на вас"
+        res = "Было ли что-то со времени нашей последней встречи, что вызвало сильную эмоциональную реакцию? Расскажите, как это повлияло на вас?  Если у вас не осталось вопросов попрощайтесь с ассистентом"
     
     del SURVEY_STATE[user_id]
     return res
@@ -199,14 +199,18 @@ def callback(ch, method, properties, body):
 
     logging.info(f"Распознан интент: {intent}")
 
+    message['exit'] = '0' # флаг завершения общения с ассистентом устанавливам в 0 мы хотим общаться
     
     if  user_id in SURVEY_STATE:
         logging.info(f"in survay")
         response_text = handle_survey(user_id, user_text, intent)
+    elif intent == "goodbay":
+        response_text = 'До свидания был рад пообщаться'
+        message['exit'] = '1' # пользователь попрощался уходим
     elif intent == "ask_llm":
         response_text = get_LLM_answer(user_text)
     else:
-        response_text = "Извините, я вас не понял. Попробуйте иначе."
+        response_text = response_text = get_LLM_answer("ты скорее всего не понял пользоателя сказавшего ["+user_text+"] переспроси его") 
 
     message['text'] = response_text
     logging.info(f'Ответ: {response_text}')
@@ -230,7 +234,8 @@ def callback_auth(ch, method, properties, body):
     content += handle_survey(user_id, '', workshift)
 
     logging.info(f'ответ модели - {content}')
-    message['text'] = content    
+    message['text'] = content 
+    message['exit'] = '0' # флаг завершения общения с ассистентом устанавливам в 0 мы хотим общаться   
     logging.info(f'сообщение к отправке: {message}')
     channel.basic_publish(
         exchange = EXCHANGE,

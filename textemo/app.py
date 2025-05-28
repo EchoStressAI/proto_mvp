@@ -3,8 +3,6 @@ import json
 import os
 import logging
 import numpy as np
-import torch
-from transformers import BertTokenizer, BertForSequenceClassification
 import mlflow
 
 EXCHANGE = 'textemo'
@@ -24,26 +22,31 @@ channel.exchange_declare(exchange=EXCHANGE, exchange_type="fanout")
 
 
 # Классы эмоций 
-EMOTIONS = ['angry_text', 'disgusted_text', 'scared_text', 'happy_text', 'neutral_text', 'sad_text', 'surprised_text']
+EMOTIONS = ['angry_text', 'disgusted_text', 'happy_text', 'neutral_text', 'sad_text', 'scared_text', 'surprised_text']
 
 # Инициализация модели и токенайзера
 MODEL_PATH = 'model'
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 logging.info("Загрузка модели и токенайзера...")
 
 # Создаем pipeline для инференса
-classifier =  mlflow.transformers.load_model(MODEL_PATH) 
+classifier =  mlflow.sklearn.load_model(MODEL_PATH) 
 
 
 logging.info("Модель загружена!")
 
 # Функция для предсказания эмоций с вероятностями
 def predict_emotions(text: str) -> dict:
-    prediction = classifier(text, return_all_scores=True)
+    # Преобразуем текст в DataFrame 
+    df = [text]
+    # Получаем вероятности для каждого бинара
+    proba_list = classifier.predict_proba(df)
+    # MultiOutputClassifier возвращает список массивов (для каждого класса)
+    # Берем proba[:, 1] для каждого
+    scores = [p[0][1] for p in proba_list]
+    return {EMOTIONS[i]: round(scores[i], 4) for i in range(len(EMOTIONS))}
 
-    # Возвращаем словарь с вероятностями эмоций
-    return {EMOTIONS[i]: round(prediction[0][i]['score'], 4) for i in range(len(EMOTIONS))}
 
 
 # Создаём функцию callback для обработки данных из очереди

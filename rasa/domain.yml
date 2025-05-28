@@ -1,14 +1,14 @@
 version: "3.1"
 
 intents:
-  - select_morning
-  - select_evening
   - ask_llm
-
+  - goodbay
 responses:
   utter_default:
     - text: "Извините, я вас не понял."
-
+  utter_goodbye:
+    - text: "До свидания! Хорошего дня!"
+    - text: "Пока! Если что-то нужно — обращайтесь."
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true

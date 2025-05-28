@@ -32,61 +32,57 @@ def extract_audio_features(audio_file_path):
     try:
         logging.info(f"Загрузка файла: {audio_file_path}")
         snd = parselmouth.Sound(audio_file_path)
+        pitch = snd.to_pitch()
+        pitch_values = pitch.selected_array['frequency']
+        voiced = pitch_values[pitch_values > 0]
+        voiced = np.ravel(voiced)
+        pitch_mean = float(voiced.mean()) if voiced.size > 0 else np.nan
+        pitch_median = float(np.median(voiced)) if voiced.size > 0 else np.nan
 
-        # ЧОТ среднее и медиана
-        logging.info("Вычисление ЧОТ среднее и медиана")
-        pitch = call(snd, "To Pitch", 0.0, 75, 600)
-        pitch_values = pitch.selected_array["frequency"]
-        pitch_values = pitch_values[pitch_values > 0]
-        pitch_mean = np.mean(pitch_values) if len(pitch_values) > 0 else 0
-        pitch_median = np.median(pitch_values) if len(pitch_values) > 0 else 0
+        intensity = snd.to_intensity()
+        loudness = np.nan
+        intensity_values = np.ravel(intensity.values) if hasattr(intensity, 'values') else np.array([])
+        if intensity_values.size > 0:
+            loudness = float(intensity_values.mean())
 
-        # Громкость
-        logging.info("Вычисление громкости")
-        loudness = call(snd, "Get intensity (dB)")
+        point_process = parselmouth.praat.call(snd, "To PointProcess (periodic, cc)", 75, 500)
+        voice_impulses = parselmouth.praat.call(point_process, "Get number of points")
 
-        # Голосовые импульсы
-        print("Вычисление голосовых импульсов")
-        point_process = call(snd, "To PointProcess (periodic, cc)", 75, 600)
-        voice_impulses = call(point_process, "Get number of periods", 0, snd.get_total_duration(), 0.0001, 0.02, 1.3)
-        logging.info(f"Голосовые импульсы: {voice_impulses}")
+        total_duration = snd.get_total_duration()
+        speech_rate = voice_impulses / total_duration if total_duration > 0 else np.nan
 
-        # Паузы
-        logging.info("Вычисление пауз через librosa (в долях)")
-        y, sr = librosa.load(audio_file_path, sr=16000)
-        intervals = librosa.effects.split(y, top_db=30)
-        total_duration = len(y) / sr
-        silent_duration = total_duration - sum((end - start) / sr for start, end in intervals)
-        pauses = silent_duration / total_duration
-        pauses_scaled = pauses * 0.5  # Подгонка под шкалу метаданных
-        logging.info(f"Паузы: {pauses_scaled:.5f}")
+        pauses = 0.0
+        min_silence_length = 0.15
+        silence_thresh = loudness * 0.2 if not np.isnan(loudness) else 0
+        cur_pause = 0.0
+        timestep = 0.01
+        if intensity_values.size > 0:
+            for val in intensity_values:
+                if val < silence_thresh:
+                    cur_pause += timestep
+                else:
+                    if cur_pause > min_silence_length:
+                        pauses += cur_pause
+                    cur_pause = 0.0
+        pauses_scaled = pauses / total_duration if total_duration > 0 else np.nan
 
-        # Джиттер и шиммер
-        logging.info("Вычисление джиттера и шиммера")
-        try:
-            jitter = call(point_process, "Get jitter (local)", 0, 0, 0.0001, 0.02, 1.3)
-            shimmer = call([snd, point_process], "Get shimmer (local)", 0, 0, 0.0001, 0.02, 1.3, 1.6)
-            logging.info(f"Джиттер: {jitter:.5f}, Шиммер: {shimmer:.5f}")
-        except Exception as e:
-            logging.error(f"Ошибка при вычислении джиттера и шиммера: {e}")
-            jitter, shimmer = 0, 0
+        jitter = parselmouth.praat.call(point_process, "Get jitter (local)", 0, 0, 0.0001, 0.02, 1.3)
+        shimmer = parselmouth.praat.call([snd, point_process], "Get shimmer (local)", 0, 0, 0.0001, 0.02, 1.3, 1.6)
+        jitter_perc = float(jitter) if jitter is not None else np.nan
+        shimmer_perc = float(shimmer) if shimmer is not None else np.nan
+        anxiety = np.nanmean([jitter_perc, shimmer_perc])
 
-        # Тревожность
-        logging.info("Вычисление тревожности")
-        anxiety_raw = (jitter * 100 + shimmer * 100 + pauses_scaled * 100) / 3
-        anxiety = min(max(anxiety_raw, 0), 60)
-
-        logging.info("Характеристики извлечены успешно")
         return {
-            "pitch_mean": round(pitch_mean, 2),
-            "pitch_median": round(pitch_median, 2),
-            "loudness": round(loudness, 2),
-            "voice_impulses": round(voice_impulses, 2),
-            "pauses_scaled": round(pauses_scaled, 5),
-            "jitter": round(jitter, 5),
-            "shimmer": round(shimmer, 5),
-            "anxiety": round(anxiety, 2)
-        }
+            'pitch_mean': round(pitch_mean, 2),
+            'pitch_median': round(pitch_median, 2),
+            'loudness': round(loudness, 2) if not np.isnan(loudness) else np.nan,
+            'voice_impulses': int(voice_impulses) if not np.isnan(voice_impulses) else np.nan,
+            'pauses_scaled': round(pauses_scaled, 5) if not np.isnan(pauses_scaled) else np.nan,
+            'jitter': round(jitter_perc, 5) if not np.isnan(jitter_perc) else np.nan,
+            'shimmer': round(shimmer_perc, 5) if not np.isnan(shimmer_perc) else np.nan,
+            'anxiety': round(anxiety, 3) if not np.isnan(anxiety) else np.nan,
+            'speech_rate': round(speech_rate, 3) if not np.isnan(speech_rate) else np.nan
+            }
     except Exception as e:
         logging.error(f"Ошибка при извлечении характеристик: {e}")
         return None
@@ -97,7 +93,7 @@ def callback(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
     user_id = message['user_id']
-    audio_file_name = message['fname']
+    audio_file_name = message['audio_file']
     audio_file_path = os.path.join(DATA_DIR, audio_file_name)
     tstamp = message['timestamp']
     logging.info(f'start extract: {audio_file_path}')

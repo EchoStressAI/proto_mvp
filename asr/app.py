@@ -35,7 +35,7 @@ def callback(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
     user_id = message['user_id']
-    audio_file_name = message['fname']
+    audio_file_name = message['audio_file']
     audio_file_path = os.path.join(DATA_DIR, audio_file_name)
     tstamp = message['timestamp']
     logging.info(f'start transcribe: {audio_file_path}')
@@ -45,11 +45,7 @@ def callback(ch, method, properties, body):
 
     
     
-    message = {
-        'user_id': user_id,
-        'text': recognized_text,
-        'timestamp':tstamp
-    }
+    message['text'] = recognized_text
 
     channel.basic_publish(
         exchange=EXCHANGE,

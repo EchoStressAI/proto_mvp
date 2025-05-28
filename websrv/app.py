@@ -10,6 +10,8 @@ from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
+import base64
+import ssl
 
 # Настройки подключения к PostgreSQL
 DB_HOST = os.getenv("DB_HOST", "postgres")
@@ -137,7 +139,9 @@ class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)  # Можно добавить ForeignKey для таблицы User
     file_name = db.Column(db.String(256), nullable=False)
+    text = db.Column(db.String(1024), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    exit_q = db.Column(db.Integer, nullable=False)
 
 # Создаем таблицы (если их еще нет)
 with app.app_context():
@@ -148,8 +152,9 @@ with app.app_context():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-         username = request.form.get("username")
-         password = request.form.get("password")
+         username = request.form.get("username").strip()
+         password = request.form.get("password").strip()
+         
          work = request.form.get("work")
          if work is None:
            flash("Не задано до или после смены!", "danger")
@@ -157,6 +162,7 @@ def login():
          user = User.get_by_username(username)
          if user and user.check_password(password):
             session["user_id"] = user.id
+            session['work'] = work
             flash("Вы успешно вошли в систему", "success")
             # сообщим всем заинтеренованным сервисам о входе пользователя
             tstamp = time.mktime(time.gmtime())
@@ -228,12 +234,19 @@ def get_question():
         logging.info(f"No questions found for user {user_id}")
         return jsonify({"info": "No questions found for user"}), 404
     fname = question.file_name
+    text = question.text
     logging.info(f"Found question file: {fname}")
     question_path = os.path.join(DATA_DIR, fname)
     if not os.path.exists(question_path):
         logging.error("Audio file for question not found")
         return jsonify({"error": "Audio file for question not found"}), 404
-    return send_from_directory(DATA_DIR, fname)
+    b64_text = base64.b64encode(text.encode('utf-8')).decode('ascii')
+    # Отдаем аудио
+    response = send_from_directory(DATA_DIR, fname)
+    # И заголовок с базой
+    response.headers['X-Question-Text'] = b64_text
+    response.headers['X-Exit'] = question.exit_q
+    return response
 
 
 @app.route("/ack_question", methods=["POST"])
@@ -281,7 +294,10 @@ def upload_answer():
     try:
         """Принимает видео-ответ от пользователя"""
         logging.info("webserver -  start getting video.")    
+        logging.info(f"request {request.form.get('text')}")    
+
         user_id = get_current_user_id()
+        ass_text = request.form.get('text')
         video = request.files.get("video")
         if not video:
             return jsonify({"error": "Видео не найдено"}), 400
@@ -293,11 +309,14 @@ def upload_answer():
 
         video.save(video_path)
         logging.info(f"webserver -  end write video - {video_path}.")    
+        logging.info(f"смена - {session['work']}.")    
 
         message = {
 	        'user_id': user_id,
-    	    'fname': fname,
-            'timestamp':tstamp
+    	    'video_file': fname,
+            'timestamp':tstamp,
+            'assistant': ass_text,
+            'workshift': session['work']
 	    }
         # Открываем новое подключение и канал для публикации
         connection_pub = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))
@@ -327,11 +346,13 @@ def consume_questions():
                 message = json.loads(body)
                 user_id = message['user_id']
                 fname = message['fname']
+                text = message['text']
+                exit_q = message['exit']
                 if user_id is None or fname is None:
                     logging.error("Invalid message received")
                     return
                 # Создаем новую запись вопроса для пользователя
-                question = Question(user_id=user_id, file_name=fname)
+                question = Question(user_id=user_id, file_name=fname, text=text,exit_q=exit_q)
                 db.session.add(question)
                 db.session.commit()
                 logging.info(f"Question for user {user_id} added to database")
@@ -386,10 +407,11 @@ def self_report():
 if __name__ == "__main__":
     # Запускаем RabbitMQ в фоновом потоке
     threading.Thread(target=consume_questions, daemon=True).start()    
-
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain('./certs/cert.pem', './certs/key.pem')
     logging.info("webserver start.")    
     app.run(host="0.0.0.0", 
             port=5000, 
             debug=True,        
-#            ssl_context='adhoc'
+            ssl_context= context#'adhoc'
             )

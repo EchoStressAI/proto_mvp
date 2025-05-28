@@ -34,7 +34,7 @@ def callback(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
     user_id = message['user_id']
-    audio_file = message['fname']
+    audio_file = message['audio_file']
     tstamp = message['timestamp']
 
 

@@ -51,18 +51,14 @@ def callback(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
     user_id = message['user_id']
-    video_file = message['fname']
+    video_file = message['video_file']
     tstamp = message['timestamp']
 
 
     # Извлечение аудиодорожки из выбранного видеофайла
     audio_file = extract_audio_from_video(video_file, DATA_DIR)
     
-    message = {
-        'user_id': user_id,
-        'fname': audio_file,
-        'timestamp':tstamp
-    }
+    message['audio_file'] = audio_file
 
     channel.basic_publish(
         exchange = EXCHANGE,

@@ -1,0 +1,6 @@
+﻿version: "3.1"
+stories:
+  - story: goodbay path
+    steps:
+      - intent: goodbay
+      - action: utter_goodbye

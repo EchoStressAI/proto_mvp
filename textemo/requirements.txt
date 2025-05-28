@@ -1,5 +1,4 @@
 numpy==1.24
 pika==1.1.0
-torch
-transformers
 mlflow
+scikit-learn==1.5.1
