@@ -163,6 +163,7 @@ def login():
          if user and user.check_password(password):
             session["user_id"] = user.id
             session['work'] = work
+            session['sex'] = user.sex
             flash("Вы успешно вошли в систему", "success")
             # сообщим всем заинтеренованным сервисам о входе пользователя
             tstamp = time.mktime(time.gmtime())
@@ -317,6 +318,7 @@ def upload_answer():
             'timestamp':tstamp,
             'assistant': ass_text,
             'workshift': session['work']
+            'sex' : 
 	    }
         # Открываем новое подключение и канал для публикации
         connection_pub = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq'))

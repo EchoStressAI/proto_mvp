@@ -57,6 +57,9 @@ CREATE TABLE IF NOT EXISTS chanks (
     Arousal_audio    NUMERIC(6,2),
     Mean_Deviation_audio NUMERIC(6,2),  
     text TEXT,
+    assistant TEXT,
+    workshift VARCHAR(10),
+    fname TEXT;
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     UNIQUE (user_id, timestamp)

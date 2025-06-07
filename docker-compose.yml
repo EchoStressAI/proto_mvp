@@ -183,6 +183,9 @@ services:
     restart: always
     volumes:
       - ./data:/app/data
+      - ./models/aud_int:/app/model_int
+      - ./models/aud_ext:/app/model_ext
+      - ./models/aud_dom:/app/model_dom
     depends_on:
       - rabbitmq
       - web-server

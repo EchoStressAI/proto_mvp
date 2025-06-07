@@ -11,7 +11,7 @@
 <body class="main-form">
     <div class="container">
         <div class="site-container login-container">
-          <header class="login-title"><img class="logo" alt="EchoStressAI" src="{{ url_for('static', filename='images/logo.png') }}"><h2>Вход в систему</h2></header>
+          <header class="login-title"><img class="logo" alt="EchoStressAI" src="{{ url_for('static', filename='images/logo.png') }}"><h2>Вход в систему</h2><div>Введите свое имя и пароль, чтобы войти в систему.</div></header>
       {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
          <ul>
@@ -28,27 +28,31 @@
             <div class="mb-3">
                 <input class="input_login" placeholder="Пароль" type="password" name="password" required>
             </div>
-			<div class="mb-3">
-				<div class="radio radio-primary form-check form-check-inline">
-				<input type="radio" name="work" id="workbefore" value="before" required>
-				<label for="workbefore">До смены</label>
+			<div class="mb-3 text-start work_wrap">
+				<div>Выберите одно из значений</div>
+				<div class="radio_wrap"> 
+					<div class="radio radio-primary form-check1 form-check-inline">
+						<input type="radio" name="work" id="workbefore" value="before" required>
+						<label for="workbefore">До смены</label>
+					</div>
+					<div class="radio radio-primary form-check1 form-check-inline">
+						<input type="radio" name="work" id="workafter" value="after">
+						<label for="workafter">После смены</label>
+					</div>
 				</div>
-			  	<div class="radio radio-primary form-check form-check-inline">
-				<input type="radio" name="work" id="workafter" value="after">
-				<label for="workafter">После смены</label>
-				</div>
-			<div class="invalid-feedback">
-      Выберите значение
-    </div>
+			<div class="invalid-feedback">Выберите значение</div>
 			</div>
+			<div class="login_extra">
+			<label class="form-control_label">
+				<input type="checkbox" name="checkbox" checked="">
+				Запомнить
+			  </label>
+           
+            </div>
             <div class="mb-3">
                 <button type="submit" class="btn btn-primary btn-login">Войти</button>
             </div>
-            <div class="login_extra">
-              <span>
-                <input type="checkbox" checked="" name="checkbox"> <span> Запомнить </span>
-              </span>
-            </div>
+            
     
             </form>
         </div>

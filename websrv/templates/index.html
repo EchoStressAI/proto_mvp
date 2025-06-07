@@ -19,7 +19,8 @@
     </header>
     <div class="site-container">
       <div class="site-container_block">
-        <h4 class="main_message">Роман, приветствую на опросе перед началом смены! <button class="main-button" id="toggleRecording2" >Начать диалог</button></h4> 
+        <h4 id="questionText" class="main_message">Приветствуем вас!<button class="main-button" id="toggleRecording2" >Начать диалог</button></h4> 
+		<h4 id="gifStatus">Жду ответа...</h4>
         <!-- GIF для разных состояний -->
         <img class="ani_gif" id="idleGif" src="{{ url_for('static', filename='images/idle.gif') }}" alt="Ожидание вопроса" style="display:none;">
         <img class="ani_gif" id="questionGif" src="{{ url_for('static', filename='images/question.gif') }}" alt="Загрузка вопроса..." style="display:none;">
@@ -30,28 +31,64 @@
 
       <div class="site-container_block">
         <h2>Ваш ответ</h2>
-        <div>
-		<img class="logo" src="{{ url_for('static', filename='images/Microphone.svg') }}">
-          <button class="main-button" id="toggleRecording">Начать запись</button> Нажмите, чтобы ответить ассистенту
+		<div class="wrap_videos">
+            <video id="videoElement" autoplay muted controls></video>
+        </div>
+        <div class="answer_wrap">
+          <button class="main-button" id="toggleRecording"></button> <span id="toggleRecordingText">Нажмите, чтобы ответить ассистенту</span>
+		  <button class="main-button2" id="messaging"></button>
+		  <button class="main-button2" id="sound"></button>
         </div>
       </div>
-
+	  <div class="site-container_block">
+	  <h2 class="c19" id="h.jntgm66xiojv"><span class="c7 c15">Инструкция перед началом опроса</span></h2><p class="c17"><span>Пожалуйста, отвечайте ассистенту </span><span class="c7">откровенно</span><span>&nbsp;и </span><span class="c7">полными предложениями</span><span>. Пример: </span><span class="c21">Считаете ли Вы, что справитесь со всеми задачами на этой смене?</span><span>&nbsp;→ </span><span class="c7 c13">«Я считаю, что справлюсь со всеми задачами на этой смене»</span></p><h3 class="c11" id="h.4o6gq17yiozq"><span class="c3">Ориентиры при описании эмоций</span></h3>
+		  <table class="table">
+				<thead class="thead-light">
+					<tr>
+						<th class="c12" colspan="1" rowspan="1"><p class="c10"><span class="c7">Радость</span></p></th>
+						<th class="c2" colspan="1" rowspan="1"><p class="c10"><span class="c7">Грусть</span></p></th>
+						<th class="c8" colspan="1" rowspan="1"><p class="c10"><span class="c7">Удивление</span></p></th>
+						<th class="c0" colspan="1" rowspan="1"><p class="c10"><span class="c7">Злость</span></p></th>
+						<th class="c4" colspan="1" rowspan="1"><p class="c10"><span class="c7">Страх</span></p></th>
+						<th class="c9" colspan="1" rowspan="1"><p class="c10"><span class="c7">Отвращение</span></p></th>
+					</tr>
+				</thead>
+				<tbody>
+				<tr class="c5"><td class="c12" colspan="1" rowspan="1"><p class="c1"><span class="c6">удовлетворение</span></p></td><td class="c2" colspan="1" rowspan="1"><p class="c1"><span class="c6">грусть</span></p></td><td class="c8" colspan="1" rowspan="1"><p class="c1"><span class="c6">удивление</span></p></td><td class="c0" colspan="1" rowspan="1"><p class="c1"><span class="c6">раздражение</span></p></td><td class="c4" colspan="1" rowspan="1"><p class="c1"><span class="c6">беспокойство</span></p></td><td class="c9" colspan="1" rowspan="1"><p class="c1"><span class="c6">брезгливость</span></p></td></tr>
+				<tr class="c5"><td class="c12" colspan="1" rowspan="1"><p class="c1"><span class="c6">радость</span></p></td><td class="c2" colspan="1" rowspan="1"><p class="c1"><span class="c6">печаль</span></p></td><td class="c8" colspan="1" rowspan="1"><p class="c1"><span class="c6">изумление</span></p></td><td class="c0" colspan="1" rowspan="1"><p class="c1"><span class="c6">гнев</span></p></td><td class="c4" colspan="1" rowspan="1"><p class="c1"><span class="c6">страх</span></p></td><td class="c9" colspan="1" rowspan="1"><p class="c1"><span class="c6">отвращение</span></p></td></tr>
+				<tr class="c5"><td class="c12" colspan="1" rowspan="1"><p class="c1"><span class="c6">восторг</span></p></td><td class="c2" colspan="1" rowspan="1"><p class="c1"><span class="c6">отчаяние</span></p></td><td class="c8" colspan="1" rowspan="1"><p class="c1"><span class="c6">потрясение</span></p></td><td class="c0" colspan="1" rowspan="1"><p class="c1"><span class="c6">ярость</span></p></td><td class="c4" colspan="1" rowspan="1"><p class="c1"><span class="c6">ужас</span></p></td><td class="c9" colspan="1" rowspan="1"><p class="c1"><span class="c6">сильное отвращение</span></p></td></tr>
+				</tbody>
+			</table>
+	</div>
       <script>
         const idleGif = document.getElementById('idleGif');
+        const gifStatus = document.getElementById('gifStatus');
         const questionGif = document.getElementById('questionGif');
         const speakingGif = document.getElementById('speakingGif');
         const questionAudio = document.getElementById('questionAudio');
+		const videoElement = document.getElementById('videoElement');
         const toggleRecordingBtn = document.getElementById('toggleRecording');
+        const toggleRecordingTxt = document.getElementById('toggleRecordingText');
 
         let mediaRecorder;
         let recordedChunks = [];
         let cameraStream;
         let isRecording = false;
 
+		// helper для правильного декодирования base64→UTF-8
+        function decodeB64Utf8(b64) {
+           const bin = atob(b64);
+           // превращаем JS-строку (кодовые единицы 0–255) в байты
+           const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+           // TextDecoder по-умолчанию — 'utf-8'
+           return new TextDecoder().decode(bytes);
+        }
+
         // По окончании аудио вопроса возвращаем idle GIF
         questionAudio.addEventListener('ended', () => {
           questionGif.style.display = 'none';
           idleGif.style.display = 'block';
+		  gifStatus.textContent = 'Жду ответа...';
         });
 
         // Проверка вопроса при загрузке
@@ -62,8 +99,14 @@
             if (resp.ok) {
               const getQ = await fetch('/get_question');
               if (getQ.ok) {
-                const audioBlob = await getQ.blob();
-                questionAudio.src = URL.createObjectURL(audioBlob);
+                // читаем и декодируем текст из заголовка
+                const b64 = getQ.headers.get('X-Question-Text');
+                if (b64) {
+                  const text = decodeB64Utf8(b64);
+                  document.getElementById('questionText').textContent = text;
+                }
+               const audioBlob = await getQ.blob();
+               questionAudio.src = URL.createObjectURL(audioBlob);
               }
             }
           } catch (e) {
@@ -78,9 +121,17 @@
             if (resp.ok) {
               const getQ = await fetch('/get_question');
               if (getQ.ok) {
+			  // читаем и декодируем текст из заголовка
+                const b64 = getQ.headers.get('X-Question-Text');
+                if (b64) {
+                  const text = decodeB64Utf8(b64);
+                  document.getElementById('questionText').textContent = text;
+                }
+				
                 const audioBlob = await getQ.blob();
                 idleGif.style.display = 'none';
                 questionGif.style.display = 'block';
+				gifStatus.textContent = 'Обрабатываю запрос...';
                 questionAudio.src = URL.createObjectURL(audioBlob);
                 questionAudio.play().catch(e => console.warn('Автовоспроизведение заблокировано:', e));
                 await fetch('/ack_question', { method: 'POST' });
@@ -98,15 +149,22 @@
             try {
               cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
               recordedChunks = [];
-              mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
-
-              mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+              //mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/webm' });
+			  mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
+			  videoElement.srcObject = cameraStream;
+              videoElement.muted = true; // Мутим видео, чтобы не было эха
+              
+              mediaRecorder.ondataavailable = e => { if (e.data.size > 0) 
+			 
+			  recordedChunks.push(e.data); };
               mediaRecorder.start();
-              toggleRecordingBtn.textContent = 'Остановить запись';
+			  toggleRecordingBtn.classList.add("isRecording");
+              toggleRecordingTxt.textContent = 'Нажмите, чтобы закончить запись';
               isRecording = true;
               idleGif.style.display = 'none';
               questionGif.style.display = 'none';
               speakingGif.style.display = 'block';
+			  gifStatus.textContent = 'Внимательно слушаю...';
             } catch (e) {
               alert('Ошибка доступа к камере или микрофону. Проверьте настройки.');
             }
@@ -114,14 +172,23 @@
             mediaRecorder.stop();
             mediaRecorder.onstop = async () => {
               cameraStream.getTracks().forEach(t => t.stop());
-              toggleRecordingBtn.textContent = 'Начать запись';
+			  toggleRecordingBtn.classList.remove("isRecording");
+              toggleRecordingTxt.textContent = 'Нажмите, чтобы ответить ассистенту';
               isRecording = false;
               speakingGif.style.display = 'none';
               idleGif.style.display = 'block';
 
               const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+			  
+			  videoElement.srcObject = null; // Очищаем поток с камеры
+              videoElement.src = URL.createObjectURL(videoBlob); // Устанавливаем записанное видео
+              videoElement.controls = true; // Включаем управление для воспроизведения
+              videoElement.muted = false; // Размутим видео
+			  
+			  
               const formData = new FormData();
               formData.append('video', videoBlob, 'answer.webm');
+              formData.append('text', document.getElementById('questionText').textContent);
               try {
                 await fetch('/upload_answer', { method: 'POST', body: formData });
               } catch (e) {

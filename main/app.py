@@ -210,7 +210,7 @@ def callback(ch, method, properties, body):
     elif intent == "ask_llm":
         response_text = get_LLM_answer(user_text)
     else:
-        response_text = response_text = get_LLM_answer("ты скорее всего не понял пользоателя сказавшего ["+user_text+"] переспроси его") 
+        response_text = response_text = get_LLM_answer("ты скорее всего не понял пользователя сказавшего ["+user_text+"] переспроси его") 
 
     message['text'] = response_text
     logging.info(f'Ответ: {response_text}')

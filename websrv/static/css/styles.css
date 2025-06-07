@@ -19,6 +19,8 @@ display: flex;
     width: 878px;
   }
 }
+* {color: #354D6C;
+}
  
     #questionAudio {
       display: none;
@@ -51,28 +53,39 @@ display: flex;
     font-weight: 600;
     line-height: 24px;
     letter-spacing: 0%;
-    margin-bottom: 40px;
+    margin-top: 32px;
+	margin-bottom: 10px;
     }
-    
+    header div {margin-bottom:48px}
+	
   .input_login {
-    background: #EDEDFC;
+    background: #F7F7F7;
     height: 56px;
     width: 100%;
     padding: 16px;
     box-sizing: border-box;
-    border-radius: 8px;
+    border-radius: 15px;
     border:none;
     font-family: Source Sans Pro;
     font-weight: 400;
-    font-size: 16px;
+    font-size: 17px;
     line-height: 19px;
     letter-spacing: 0px;
     }
+  .radio_wrap { background: #F7F7F7;
+    height: 56px;
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+    border-radius: 15px;
+	margin-top: 8px;}
+  .work_wrap{margin-top: 1.5rem;}
+  
   
     button[type="submit"], .main-button{
     background: #FF7313;
     color:#fff;
-    border-radius: 40px;
+    border-radius: 15px;
     height: 44px;
     font-family: Source Sans Pro;
     font-weight: 600;
@@ -82,11 +95,13 @@ display: flex;
     text-align: center;
     padding: 0 30px;
     border: none;
-    margin: 15px 0 0 15px;
+    margin: 15px 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     }
+	
+	button[type="submit"]{width:100%;}
   
     button, .btn-login {
 	  background: none;
@@ -170,13 +185,61 @@ input[type="radio"]:checked,
 input[type="radio"]:not(:checked) {
   position: absolute;
   left: -9999px; }
+  
+  .form-control_label {
+  display: grid;
+  grid-template-columns: 39px auto;
+
+}
+  
+  input[type="checkbox"] {
+	  -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0;
+    font: inherit;
+    width: 30px;
+    height: 30px;
+    border-radius: 0.15em;
+    transform: translateY(-0.075em);
+    background: #FF7313;
+	border-radius: 8px;
+    display: grid;
+    place-content: center;
+  }
+
+input[type="checkbox"]:before {
+      content: "";
+    width: 0.65em;
+    height: 0.65em;
+    -webkit-clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    transform: scale(0);
+    transform-origin: bottom left;
+    transition: 120ms transform ease-in-out;
+    /* box-shadow: inset 1em 1em var(--form-control-color); */
+    background-color: #fff;
+}
+
+input[type="checkbox"]:checked::before {
+transform-origin: bottom left;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+input[type=checkbox]:checked::before {
+  transform: scale(1.3);
+}
+
+.input_login:focus-visible
+ {outline: 1px solid #FFC7A4}
+
 
 input[type="radio"]:checked + label,
 input[type="radio"]:not(:checked) + label {
   position: relative;
-  padding-left: 28px;
+  padding-left: 32px;
   cursor: pointer;
-  line-height: 20px;
+  line-height: 23px;
   display: inline-block; }
 
 input[type="radio"]:checked + label:before,
@@ -185,8 +248,8 @@ input[type="radio"]:not(:checked) + label:before {
   position: absolute;
   left: 0;
   top: 0;
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   border: 2px solid rgba(0, 0, 0, 0.1);
   border-radius: 100%;
   background: #fff; }
@@ -194,11 +257,11 @@ input[type="radio"]:not(:checked) + label:before {
 input[type="radio"]:checked + label:after,
 input[type="radio"]:not(:checked) + label:after {
   content: '';
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   position: absolute;
-  top: 3px;
-  left: 3px;
+  top: 4px;
+  left: 4px;
   border-radius: 100%;
   -webkit-transition: all 0.2s ease;
   -o-transition: all 0.2s ease;
@@ -301,7 +364,7 @@ input[type="radio"]:checked + label:after {
 .checkbox-wrap .checkbox span {
   margin-left: 35px; }
 
-.checkbox-wrap .checkbox input[type=checkbox],
+./* checkbox-wrap .checkbox input[type=checkbox],
 .checkbox-wrap input[type="checkbox"] {
   position: absolute;
   visibility: hidden;
@@ -334,5 +397,24 @@ input[type="radio"]:checked + label:after {
   font-size: 37px;
   content: '\f15c';
   line-height: .4;
-  margin-top: 6px; }
+  margin-top: 6px; } */
   
+  .c7 {
+    font-weight: 700;
+}
+  
+  #toggleRecording {background: #FF7313 url(../images/Microphone.svg) center no-repeat;
+    width: 72px;
+    height: 72px;}
+	#toggleRecording.isRecording {background-image: url(../images/MicrophoneRec.svg);}
+	
+	.main-button2 {border:none;}
+	#messaging {background: url(../images/message_manager.svg) center no-repeat;}
+	#sound {background: url(../images/Group.svg) center no-repeat;}
+	
+	.answer_wrap {    display: flex;
+    align-content: center;
+    align-items: center;
+    gap: 20px;
+    justify-content: flex-start;
+	font-size: 1.7em;}
