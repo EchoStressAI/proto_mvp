@@ -133,40 +133,40 @@ def callback(ch, method, properties, body):
     logging.info(f'FER отработал   - {len(fer_records)}')    
     # Compute summary metrics
     summary = {}
-    summary['FPS_fer'] = fps
+    summary['fps_fer'] = fps
     # Valence via MLP
     feats = [f"{emo}_fer" for emo in emotion_labels]
     if all(c in df.columns for c in feats):
         X = torch.tensor(df[feats].values, dtype=torch.float32)
         with torch.no_grad():
             v_pred = mlp(X).squeeze().numpy()
-        df['Valence_mlp_fer'] = v_pred
-        summary['Valence_mean_fer']   = float(np.mean(v_pred))
-        summary['Valence_median_fer'] = float(np.median(v_pred))
-        summary['Valence_trimmed_mean_fer'] = float(trim_mean(v_pred, 0.1))
+        df['valence_mlp_fer'] = v_pred
+        summary['valence_mean_fer']   = float(np.mean(v_pred))
+        summary['valence_median_fer'] = float(np.median(v_pred))
+        summary['valence_trimmed_mean_fer'] = float(trim_mean(v_pred, 0.1))
     # Emotion argmax
-    df['Emotion_argmax_fer'] = df[[f"{emo}_fer" for emo in emotion_labels]].idxmax(axis=1)
+    df['emotion_argmax_fer'] = df[[f"{emo}_fer" for emo in emotion_labels]].idxmax(axis=1)
     # Mode, sum, smoothed, confident
-    summary['Emotion_Mode_fer'] = df['Emotion_argmax_fer'].mode().iloc[0]
+    summary['emotion_mode_fer'] = df['emotion_argmax_fer'].mode().iloc[0]
     sums = df[[f"{emo}_fer" for emo in emotion_labels]].sum()
-    summary['Emotion_Sum_fer'] = sums.idxmax()
+    summary['emotion_sum_fer'] = sums.idxmax()
     # Smoothed
-    modes = [Counter(df['Emotion_argmax_fer'][max(0,i-9):i+1]).most_common(1)[0][0] for i in range(len(df))]
-    summary['Emotion_Smoothed_fer'] = Counter(modes).most_common(1)[0][0]
+    modes = [Counter(df['emotion_argmax_fer'][max(0,i-9):i+1]).most_common(1)[0][0] for i in range(len(df))]
+    summary['emotion_smoothed_fer'] = Counter(modes).most_common(1)[0][0]
     # Confident
     confid = df[[f"{emo}_fer" for emo in emotion_labels]].max(axis=1) >= 0.6
-    if confid.any(): summary['Emotion_Confident_fer'] = df.loc[confid,'Emotion_argmax_fer'].mode().iloc[0]
+    if confid.any(): summary['emotion_confident_fer'] = df.loc[confid,'emotion_argmax_fer'].mode().iloc[0]
     # Mean/max per emotion
     for emo in emotion_labels:
-        summary[f"{emo}_mean_fer"] = float(df[f"{emo}_fer"].mean())
-        summary[f"{emo}_max_fer"]  = float(df[f"{emo}_fer"].max())
+        summary[f"{emo.lower()}_mean_fer"] = float(df[f"{emo}_fer"].mean())
+        summary[f"{emo.lower()}_max_fer"]  = float(df[f"{emo}_fer"].max())
     # BiLSTM summary
     seq = torch.tensor(df[[f"{emo}_fer" for emo in emotion_labels]].values, dtype=torch.float32).unsqueeze(0)
     with torch.no_grad():
         out = bi_model(seq)
     preds = out.squeeze(0).argmax(dim=1).numpy()
     uniq = sorted(set(preds))
-    summary['Emotion_BiLSTM_fer'] = ",".join([emotion_labels[i] for i in uniq])
+    summary['emotion_bilstm_fer'] = ",".join([emotion_labels[i] for i in uniq])
 
     # Build message
     result = {**summary}
@@ -174,12 +174,13 @@ def callback(ch, method, properties, body):
     for emo in emotion_labels:
         result[f"{emo.lower()}_video"] = float(df[f"{emo}_fer"].mean())
     # dominant, valence_video, arousal_video placeholders (if needed)
-    result['Emotion_Mode_fer'] = summary['Emotion_Mode_fer']
-    result['Valence_mean_fer'] = summary['Valence_mean_fer']
+    result['emotion_mode_fer'] = summary['emotion_mode_fer']
+    result['valence_mean_fer'] = summary['valence_mean_fer']
 
 
     result['user_id'] = user_id
     result['timestamp'] = timestamp
+    logging.info(f"video result {result}")
 
     channel.basic_publish(exchange=EXCHANGE, routing_key='', body=json.dumps(result))
     logging.info(f"Processed video {video_file}")

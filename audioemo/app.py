@@ -70,29 +70,29 @@ def callback(ch, method, properties, body):
     tstamp = message['timestamp']
     res = emo_int(DATA_DIR+"/"+audio_file)
     logging.info(f'Внутренние эмоции - {res}')
-    message["Emotion_internal"] = res[0]['label']
-    message["Confidence_internal"] =  res[0]['score']
+    message["emotion_internal_audio"] = res[0]['label']
+    message["confidence_internal_audio"] =  res[0]['score']
     for i in res:
-        message[f"{i['label']}_internal"] = i['score']
+        message[f"{i['label']}_internal_audio".lower()] = i['score']
      
-    message["Valence_classic_internal"]= sum(emo['score'] * valence_map[emo['label']] for emo in res)
-    message["Arousal_classic_internal"] = sum(emo['score'] * arousal_map[emo['label']] for emo in res)
+    message["valence_classic_internal_audio"]= sum(emo['score'] * valence_map[emo['label']] for emo in res)
+    message["arousal_classic_internal_audio"] = sum(emo['score'] * arousal_map[emo['label']] for emo in res)
     
 
     res = emo_ext(DATA_DIR+"/"+audio_file)
     logging.info(f'Внешние эмоции - {res}')
-    message["Emotion_external"] = res[0]['label']
-    message["Confidence_external"] =  res[0]['score']
+    message["emotion_external_audio"] = res[0]['label']
+    message["confidence_external_audio"] =  res[0]['score']
     for i in res:
-        message[f"{i['label']}_external"] = i['score']
+        message[f"{i['label']}_external_audio".lower()] = i['score']
      
-    message["Valence_classic_external"]= sum(emo['score'] * valence_map[emo['label']] for emo in res)
-    message["Arousal_classic_external"] = sum(emo['score'] * arousal_map[emo['label']] for emo in res)
+    message["valence_classic_external_audio"]= sum(emo['score'] * valence_map[emo['label']] for emo in res)
+    message["arousal_classic_external_audio"] = sum(emo['score'] * arousal_map[emo['label']] for emo in res)
 
     res = emo_dom(DATA_DIR+"/"+audio_file)
     logging.info(f'доминированиа - {res}')
     for i in res:
-        message[f"{i['label']}_audeering".capitalize()] = i['score']
+        message[f"{i['label']}_audio"] = i['score']
         
         
     message['user_id'] = user_id

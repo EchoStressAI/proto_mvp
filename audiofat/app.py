@@ -30,8 +30,54 @@ os.makedirs(DATA_DIR, exist_ok=True)
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
+
+def add_best_audio_columns(
+    df,
+    emotions=['angry', 'happy', 'sad', 'scared', 'surprised', 'neutral', 'disgusted'],
+    metrics=[('Valence', 'valence_classic_external_audio', 'valence_classic_internal_audio'),
+             ('Arousal', 'arousal_classic_external_audio', 'arousal_classic_internal_audio')],
+    conf_thresh=0.6
+):
+    def get_prob(row, ext_col, int_col):
+        ext_conf = row['confidence_external_audio']
+        int_conf = row['confidence_internal_audio']
+        ext_val = row.get(ext_col, None)
+        int_val = row.get(int_col, None)
+        if ext_conf >= conf_thresh and int_conf >= conf_thresh:
+            if ext_val is not None and int_val is not None:
+                return (ext_val + int_val) / 2
+            elif ext_val is not None:
+                return ext_val
+            elif int_val is not None:
+                return int_val
+            else:
+                return None
+        elif ext_conf >= conf_thresh:
+            return ext_val
+        elif int_conf >= conf_thresh:
+            return int_val
+        else:
+            if ext_conf >= int_conf:
+                return ext_val
+            else:
+                return int_val
+    for emo in emotions:
+        ext_col = f'{emo}_external_audio'
+        int_col = f'{emo}_internal_audio'
+        df[f'{emo}'.capitalize()] = df.apply(lambda row: get_prob(row, ext_col, int_col), axis=1)
+
+    for metric, ext_col, int_col in metrics:
+        df[f'{metric}'] = df.apply(lambda row: get_prob(row, ext_col, int_col), axis=1)
+
+    return df
+
+
+        # Пол мужской 0 женский 1
+        # утро 0  вечер 1
+
+
 class ThresholdedSVM(BaseEstimator, ClassifierMixin):
-    def __init__(self, model, threshold=0.5):
+    def __init__(self, model, threshold=0.41):
         self.model = model
         self.threshold = threshold
 
@@ -40,25 +86,6 @@ class ThresholdedSVM(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X):
-        
-        
-        merged_with_f = X.rename(columns={'sex': 'Пол', 'timestamp':'УтроВечер', 'pauses_scaled':'Паузы', 'jitter':'Джиттер', 'shimmer':'Шиммер', 'loudness':'Громкость', 
-                                              'pitch_median':'ЧОТмедиан', 'pitch_mean':'ЧОТсреднее', 'voice_impulses':'ГолосовыеИмпульсы', 'Angry_audio':'Angry', 
-                                          'Disgusted_audio':'Disgusted', 'Scared_audio':'Scared', 'Happy_audio':'Happy', 'Neutral_audio':'Neutral',
-                                          'Sad_audio':'Sad', 'Surprised_audio':'Surprised', 'Valence_audio':'Valence', 'Arousal_audio':'Arousal'})
-        feature_columns = [
-            'УтроВечер', 'ЧОТсреднее', 'Громкость', 'ГолосовыеИмпульсы', 'Паузы', 'Джиттер', 'Шиммер',
-            'Neutral', 'Happy', 'Sad', 'Angry', 'Surprised', 'Scared', 'Disgusted',
-            'Valence', 'Arousal', 'Пол', 'VND'
-        ]
-        X = merged_with_f[feature_columns]
-        label_encoders = {}
-        for col in ["Пол", "УтроВечер", 'VND']:
-            le = LabelEncoder()
-            X[col] = le.fit_transform(X[col])
-            label_encoders[col] = le
-        X = X.fillna(X.median())
-
         proba = self.model.predict_proba(X)[:, 1]
         return (proba >= self.threshold).astype(int)
 
@@ -66,32 +93,10 @@ class ThresholdedSVM(BaseEstimator, ClassifierMixin):
         return self.model.predict_proba(X)
 
 
+
+
 model = joblib.load("./model/voice_model_fatique.pkl")
 
-# Создаём функцию callback для обработки данных из очереди
-def callback(ch, method, properties, body):
-    logging.info(f'Получено сообщение - {body}')
-    message = json.loads(body)
-    user_id = message['user_id']
-    audio_file = message['audio_file']
-    tstamp = message['timestamp']
-
-
-    # Извлечение усталости из выбранного аудиофайла
-    fatigue  = 0.03
-    
-    message = {
-        'user_id': user_id,
-        'fatigue_audio': fatigue,
-        'timestamp':tstamp
-    }
-
-    channel.basic_publish(
-        exchange = EXCHANGE,
-        routing_key = '',
-        body=json.dumps(message))
-
-    logging.info(f"Аудио успешно обработано")
 
 # Buffer to store partial messages until both parts arrive
 message_buffer = {}
@@ -118,10 +123,37 @@ def try_process(user_id, timestamp):
         # Prepare DataFrame row
         row = {'user_id': user_id, 'timestamp': timestamp}
         row.update(features)
+        logging.info(f"Колонки для предсказаний: {row}")
         df = pd.DataFrame([row])
 
+        df = add_best_audio_columns(df)
+        rename_dict = {
+            'sex': 'Пол',
+            'workshift': 'УтроВечер',
+            'pauses_scaled': 'Паузы',
+            'jitter': 'Джиттер',
+            'shimmer': 'Шиммер',
+            'loudness': 'Громкость',
+            'pitch_median': 'ЧОТмедиан',
+            'pitch_mean': 'ЧОТсреднее',
+            'voice_impulses': 'ГолосовыеИмпульсы'
+        }
+        df = df.rename(columns=rename_dict)
+        df['Пол'] = df['Пол'].map({'женский': 1, 'мужской': 0})
+        df['УтроВечер'] = df['УтроВечер'].map({'after': 1, 'before': 0})
+        
+        
+        
+        feature_columns = [
+            'УтроВечер', 'ЧОТсреднее', 'Громкость', 'ГолосовыеИмпульсы', 'Паузы', 'Джиттер', 'Шиммер',
+            'Neutral', 'Happy', 'Sad', 'Angry', 'Surprised', 'Scared', 'Disgusted',
+            'Valence', 'Arousal', 'Пол'
+        ]
+        X = df[feature_columns].copy()
+        logging.info(f"Features for model: {X}")        
+        prediction = model.predict(X)
+
         # Predict fatigue_audio
-        prediction = model.predict(df)
         fatigue_audio = float(prediction[0])
 
         # Build and publish result message
@@ -154,8 +186,8 @@ def audioemo_callback(ch, method, properties, body):
     # Try to process if both sources are ready
     try_process(user_id, timestamp)
 
-    # Acknowledge message
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    # # Acknowledge message
+    # ch.basic_ack(delivery_tag=method.delivery_tag)
 
 
 def feat_callback(ch, method, properties, body):
@@ -174,8 +206,8 @@ def feat_callback(ch, method, properties, body):
     # Try to process if both sources are ready
     try_process(user_id, timestamp)
 
-    # Acknowledge message
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    # # Acknowledge message
+    # ch.basic_ack(delivery_tag=method.delivery_tag)
 
     
     
@@ -185,7 +217,7 @@ channel.queue_bind(exchange=EXCHANGE_IN, queue='extract_aud_fat', routing_key=''
 channel.basic_consume(queue='extract_aud_fat', on_message_callback=audioemo_callback, auto_ack=True)
 
 channel.queue_declare(queue='extract_feat', durable=True)
-channel.queue_bind(exchange=EXCHANGE_IN, queue='extract_feat', routing_key='')
+channel.queue_bind(exchange=EXCHANGE_FEAT, queue='extract_feat', routing_key='')
 channel.basic_consume(queue='extract_feat', on_message_callback=feat_callback, auto_ack=True)
 
 

@@ -101,7 +101,7 @@ def upsert_chanks(conn, existing_columns, user_id, timestamp, **kwargs):
 existing_columns = get_table_columns(conn, 'chanks')  # Получаем список колонок один раз за сессию
 
 
-
+logging.info(f'Существующие колонки БД - {existing_columns}')
 
 
 def insert_self_report(conn, report_data):
