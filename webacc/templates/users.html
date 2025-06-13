@@ -1,0 +1,53 @@
+<!-- templates/users.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Список пользователей</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
+    th { background: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>Пользователи</h1>
+  <table id="users-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Public Name</th>
+        <th>Sex</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetch('/users')
+        .then(res => res.ok ? res.json() : Promise.reject(res.statusText))
+        .then(users => {
+          const tbody = document.querySelector('#users-table tbody');
+          users.forEach(({id, username, publicname, sex}) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${id}</td>
+              <td>${username}</td>
+              <td>${publicname}</td>
+              <td>${sex}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        })
+        .catch(err => {
+          console.error('Fetch error:', err);
+          document.body.insertAdjacentHTML('beforeend',
+            '<p style="color:red;">Не удалось загрузить пользователей.</p>');
+        });
+    });
+  </script>
+</body>
+</html>

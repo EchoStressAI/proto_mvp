@@ -8,6 +8,8 @@ import mlflow
 EXCHANGE = 'textemo'
 EXCHANGE_IN = 'text'
 
+trashhold  = 0.5 # граница чувствиетльности модели
+
 logging.basicConfig(level=logging.INFO,    
                     format='%(asctime)s - %(levelname)s - %(module)s - %(message)s'
                     )
@@ -18,7 +20,27 @@ channel = connection.channel()
 
 channel.exchange_declare(exchange=EXCHANGE, exchange_type="fanout")
 
+# Весовые коэффициенты для валентности
+valence_map = {
+    "angry_text": -0.7,
+    "disgusted_text": -0.6,
+    "happy_text": 0.8,
+    "neutral_text": 0.0,
+    "sad_text": -0.8,
+    "scared_text": -0.7,
+    "surprised_text": 0.3
+}
 
+# Весовые коэффициенты для активации
+arousal_map = {
+    "angry_text": 0.8,
+    "disgusted_text": 0.4,
+    "happy_text": 0.7,
+    "neutral_text": 0.0,
+    "sad_text": -0.5,
+    "scared_text": 0.9,
+    "surprised_text": 0.9
+}
 
 
 # Классы эмоций 
@@ -59,6 +81,17 @@ def callback(ch, method, properties, body):
     logging.info(f'start predict: {text}')
     # Получаем вероятности всех эмоций
     message = predict_emotions(text)
+    emo_rec =  ''
+    for emo in EMOTIONS:
+        if message[emo]>=trashhold:
+            if len(emo_rec)>0:
+                emo_rec+=','
+            emo_rec+= emo[:-5].capitalize()
+    message["emotions_text"] = emo_rec        
+    message["valence_classic_text"] = sum(message[emo] * valence_map[emo] for emo in EMOTIONS)
+    message["arousal_classic_text"] = sum(message[emo] * arousal_map[emo] for emo in EMOTIONS)
+    
+
     logging.info(f"predictions: {message}")
     message['user_id'] = user_id
     message['timestamp']  = tstamp

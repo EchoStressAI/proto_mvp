@@ -1,0 +1,4 @@
+flask==3.1.0
+flask_sqlalchemy
+pyopenssl
+psycopg2

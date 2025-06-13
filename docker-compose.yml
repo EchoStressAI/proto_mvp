@@ -114,6 +114,37 @@ services:
       - internal
       - public
 
+
+  web-account:
+    build: ./webacc
+    ports:
+      - "5001:5001"   # единственный внешний порт
+    volumes:
+      - ./data:/app/data
+      - ./secrets/serts:/app/certs
+      - ./webacc/templates:/app/templates
+      - ./webacc/static:/app/static
+    restart: always
+    environment:
+      FLASK_PORT: 5001
+      DB_HOST: postgres
+      DB_NAME: echodatabase
+      DB_USER: dbuser
+      DB_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+      - public
+
+
   video2sound:
     build: ./vid2snd
     volumes:
