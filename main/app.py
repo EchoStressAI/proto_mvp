@@ -1,5 +1,6 @@
 import pika
 import json
+import time
 import os
 import logging
 import numpy as np
@@ -235,6 +236,8 @@ def callback_auth(ch, method, properties, body):
 
     logging.info(f'ответ модели - {content}')
     message['text'] = content 
+    str_time = time.strftime("%a_%d_%b_%Y_%H_%M_%S", time.gmtime())
+    message['dialog'] = "диалог_"+str_time+ ("_утро" if workshift == 'before' else "_вечер")
     message['exit'] = '0' # флаг завершения общения с ассистентом устанавливам в 0 мы хотим общаться   
     logging.info(f'сообщение к отправке: {message}')
     channel.basic_publish(

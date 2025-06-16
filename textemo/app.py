@@ -82,15 +82,40 @@ def callback(ch, method, properties, body):
     # Получаем вероятности всех эмоций
     message = predict_emotions(text)
     emo_rec =  ''
+    argmax_emo = ''
+    argmax_val = 0.0
     for emo in EMOTIONS:
+        if message[emo] > argmax_val:
+            argmax_emo = emo
+            argmax_val = message[emo]
         if message[emo]>=trashhold:
             if len(emo_rec)>0:
                 emo_rec+=','
             emo_rec+= emo[:-5].capitalize()
-    message["emotions_text"] = emo_rec        
-    message["valence_classic_text"] = sum(message[emo] * valence_map[emo] for emo in EMOTIONS)
+    message["emotions_text"] = emo_rec
+    val = sum(message[emo] * valence_map[emo] for emo in EMOTIONS)        
+    message["valence_classic_text"] = val
     message["arousal_classic_text"] = sum(message[emo] * arousal_map[emo] for emo in EMOTIONS)
     
+        # Позитивные и негативные эмоции
+    pos = ["happy_text"]
+    neg = ["angry_text", "scared_text", "disgusted_text", "sad_text"]
+
+    if val > 0.1:
+        pos.append("surprised_text")
+    elif val < -0.1:
+        neg.append("surprised_text")
+
+    pos_vals = [ message[emo] for emo in pos]
+    neg_vals = [ message[emo] for emo in neg]
+
+    message["mean_positive_text"] = np.mean(pos_vals)
+    message["min_positive_text"] = np.min(pos_vals)
+    message["max_positive_text"] = np.max(pos_vals)
+    message["mean_negative_text"] = np.mean(neg_vals)
+    message["min_negative_text"] = np.min(neg_vals)
+    message["max_negative_text"] = np.max(neg_vals)
+    message["emotion_text_argmax"] = argmax_emo[:-5].capitalize()
 
     logging.info(f"predictions: {message}")
     message['user_id'] = user_id

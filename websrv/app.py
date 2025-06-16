@@ -142,6 +142,7 @@ class Question(db.Model):
     text = db.Column(db.String(1024), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     exit_q = db.Column(db.Integer, nullable=False)
+    dialog = db.Column(db.String(256), default='')
 
 # Создаем таблицы (если их еще нет)
 with app.app_context():
@@ -237,6 +238,9 @@ def get_question():
         return jsonify({"info": "No questions found for user"}), 404
     fname = question.file_name
     text = question.text
+    if len(question.dialog)>0:
+        logging.info(f"Start dialog { question.dialog}")
+        session['dialog'] = question.dialog
     logging.info(f"Found question file: {fname}")
     question_path = os.path.join(DATA_DIR, fname)
     if not os.path.exists(question_path):
@@ -319,6 +323,7 @@ def upload_answer():
             'timestamp':tstamp,
             'assistant': ass_text,
             'workshift': session['work'],
+            'dialog': session['dialog'],
             'sex' : session["sex"]
 	    }
         # Открываем новое подключение и канал для публикации
@@ -351,11 +356,15 @@ def consume_questions():
                 fname = message['fname']
                 text = message['text']
                 exit_q = message['exit']
+
                 if user_id is None or fname is None:
                     logging.error("Invalid message received")
                     return
                 # Создаем новую запись вопроса для пользователя
                 question = Question(user_id=user_id, file_name=fname, text=text,exit_q=exit_q)
+                if 'dialog' in message:
+                    logging.info(f"received dialog {message['dialog']} ")
+                    question.dialog = message['dialog']
                 db.session.add(question)
                 db.session.commit()
                 logging.info(f"Question for user {user_id} added to database")
