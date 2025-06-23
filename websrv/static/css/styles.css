@@ -1,12 +1,19 @@
 html {height: 100%;}
-body.main-form {    
-/*    background: url(../images/bg_wave.svg) bottom no-repeat;*/
+
+
+body {
+	   background:#fff;
+      font-family: 'Open Sans', sans-serif;
     }
+	
+body.index {background: #F9F9F9}	
+
+#main-content  {display:none}
+#work  {font-transform: lowercase;}
   
   .site-container {
       box-sizing: border-box;
       text-align: center;
-	  margin-top: 35px;
     }
 .main_message {margin-bottom: 25px;
 display: flex;
@@ -16,47 +23,71 @@ display: flex;
 
 @media (min-width: 1200px) {
   .container {
-    width: 878px;
+    width: 952px;
+	padding-bottom: 100px !important
   }
 }
 * {color: #354D6C;
 }
  
+ 
+  #mobile-message {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            z-index: 9999;
+            text-align: center;
+            padding-top: 20%;
+            font-size: 24px;
+        }
     #questionAudio {
       display: none;
     }
+.top-logo {
+    height: 60px;
+}
 
-	.ani_gif {box-shadow: 0px 4px 4px 0px #00000040;
-    border-radius: 20px;}
 
-  .site-container_block {
+/*   .site-container_block {
       margin-bottom: 2rem;
-    }
-
-  body.index h1 {text-align: left;}
+    } */
+.round1{
+    border-radius: 16px;
+	}
+  body.index h1 {text-align: center;}
 
   .login-container {
     max-width: 400px;
     margin: 100px auto;
   }
 
-  h1, h2, h3 {
-    font-family: Source Sans Pro;
-  }
+
   h1{
     font-weight: 700;
     line-height: 68px;
     letter-spacing: 0px;
+	font-size: 24px;
     }
 
   h2 {
     font-weight: 600;
     line-height: 24px;
     letter-spacing: 0%;
-    margin-top: 32px;
+
 	margin-bottom: 10px;
     }
     header div {margin-bottom:48px}
+	header.login-title	{font-size: 13px;}
+	
+	ol.short-intro {
+    text-align: left;}
+	
+	ol.short-intro li{
+    margin-bottom: 16px;}
 	
   .input_login {
     background: #F7F7F7;
@@ -66,7 +97,6 @@ display: flex;
     box-sizing: border-box;
     border-radius: 15px;
     border:none;
-    font-family: Source Sans Pro;
     font-weight: 400;
     font-size: 17px;
     line-height: 19px;
@@ -87,7 +117,6 @@ display: flex;
     color:#fff;
     border-radius: 15px;
     height: 44px;
-    font-family: Source Sans Pro;
     font-weight: 600;
     font-size: 20px;
     line-height: 20px;
@@ -104,24 +133,8 @@ display: flex;
 	button[type="submit"]{width:100%;}
   
     button, .btn-login {
-	  background: none;
-	  color: #354d6c;
-	  border: 1px solid #354D6C;
-	  border-radius: 40px;
     height: 44px;
-    font-family: Source Sans Pro;
-    font-weight: 600;
-    font-size: 20px;
-	text-decoration:none;
-    line-height: 20px;
-	letter-spacing: 0%;
-    text-align: center;
     padding: 0 30px;
-    margin: 15px 0 0 15px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-	  
   }
     button:disabled {
       background: none;
@@ -142,16 +155,20 @@ display: flex;
 
   .logo {
     width:172px;
+    margin-bottom: 32px;
   }
 
+	.ani_gif {
+	box-shadow: 0px 4px 4px 0px #00000040;
+    border-radius: 16px;
+	width: 100%;
+	height: 260px;}
   video {
-    width: 100%;
-    max-width: 640px;
-    height: auto;
-    margin-top: 10px;
+        width: 100%;
+    height: 260px;
     border: 1px solid #ccc;
-    border-radius: 5px;
-  }
+    border-radius: 16px;  }
+	#videoStatus {    margin-top: 10px;}
 
   .main_header .logo {width:140px;}
 
@@ -161,9 +178,7 @@ display: flex;
     align-items: flex-end;
 	margin-top:30px;
   }
-  .wrap_videos {    display: flex;
-    justify-content: center;
-  }
+
 
     
   video#preview,
@@ -402,14 +417,25 @@ input[type="radio"]:checked + label:after {
   .c7 {
     font-weight: 700;
 }
-  
-  #toggleRecording {background: #FF7313 url(../images/Microphone.svg) center no-repeat;
-    width: 72px;
-    height: 72px;}
-	#toggleRecording.isRecording {background-image: url(../images/MicrophoneRec.svg);}
+    .recording {width: max-content; text-align: center; 
+	    box-shadow: 0 0 10px rgb(0 0 0 / 5%);
+		padding: 12px 16px;
+    position: fixed;
+    bottom: 24px;
+    left: calc(50% - 192px);}
+	#toggleRecording {background: url(../images/mic-mute.svg) center no-repeat;
+    width: 78px;
+    height: 78px;}
+	#toggleRecording.isRecording {background-image: url(../images/mic.svg);}
+	.recording-buttons {    display: flex;
+    align-items: center;}
+	
 	
 	.main-button2 {border:none;}
-	#messaging {background: url(../images/message_manager.svg) center no-repeat;}
+	#dinamic {background: url(../images/dinamic.svg) center no-repeat;}
+	#repeat {background: url(../images/repeat.svg) center no-repeat;}
+	#pause {background: url(../images/pause.svg) center no-repeat;}
+	#messaging {background: url(../images/chat.svg) center no-repeat;}
 	#sound {background: url(../images/Group.svg) center no-repeat;}
 	
 	.answer_wrap {    display: flex;
@@ -418,3 +444,40 @@ input[type="radio"]:checked + label:after {
     gap: 20px;
     justify-content: flex-start;
 	font-size: 1.7em;}
+	
+	#gifStatus, #videoStatus {color:#FF7313;}
+	
+	.orange-button {
+   border: solid 1px #FF7313;
+    border-radius: 8px;
+    color: #FF7313;
+    height: auto;
+    font-size: 16px;
+    padding: 6px 16px;
+}
+nav .orange-button {margin-bottom:0}
+
+button.orange-button {    display: flex;
+    background: #fff;
+    align-items: center;}
+.orange-text {color: #FF7313}	
+button.orange-button img,
+.orange-text img{margin: 0 5px}
+
+.test-dialog	{border: solid 1px #E1E1E180; display: flex;
+    flex-direction: column;}
+
+.assistent_text, .user_text {background:#F0F0F0; font-size:17px; font-weight:600; width: fit-content;}
+.assistent_text {border-radius:12px 12px 12px 0}
+.user_text {border-radius:12px 12px 0 12px}
+
+
+.table {border-collapse: inherit;}
+.table>:not(caption)>*>*  {border-style:none;    vertical-align: middle;font-size: 17px;}
+
+.table td{    border-radius: 16px;    height: 54px;text-transform: uppercase;font-weight: 700;    vertical-align: middle; font-size: 15px;
+
+	}
+.table td p {
+    margin-top: 0;
+    margin-bottom: 0;}

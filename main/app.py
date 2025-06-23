@@ -134,10 +134,14 @@ def get_rasa_intent(text: str, sender_id: str = "default") -> dict:
 
 
 # логика обработки опроса с учётом утреннего/вечернего интента
-def handle_survey(user_id: str, text: str, workshift: str) -> str:
+def handle_survey(user_id: str, text: str, workshift: str, restart:bool = False) -> str:
     # получаем текущее состояние (или None, если ещё не начинали опрос)
+
     state = SURVEY_STATE.get(user_id)
     logging.info(f"Статус: {state}")
+    if restart and state is not None:
+        state = None
+        del SURVEY_STATE[user_id]
     # если пользователь ещё не выбрал тип опроса — разбираем intent
     if state is None:
         if workshift == "before":
@@ -229,10 +233,10 @@ def callback_auth(ch, method, properties, body):
     user_id = str(message['user_id'])
     workshift = message['work']
     if workshift == 'before':
-        content = f"Доброе утро, {message['publicname']}. Давайте обсудим ваше самочувствие. "
+        content = f"Доброе утро, {message['publicname']}. "
     else:
-        content = f"Добрый вечер, {message['publicname']}. Давайте пообщаемся о вашем состоянии. "
-    content += handle_survey(user_id, '', workshift)
+        content = f"Добрый вечер, {message['publicname']}. "
+    content += handle_survey(user_id, '', workshift,True)
 
     logging.info(f'ответ модели - {content}')
     message['text'] = content 

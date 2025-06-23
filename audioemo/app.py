@@ -3,7 +3,11 @@ import logging
 import pika
 import json
 import os
+import numpy as np
 import mlflow.transformers
+from transformers import AutoProcessor, AutoModelForAudioClassification
+import torch
+import torchaudio
 
 
 EXCHANGE = 'audioemo'
@@ -13,8 +17,6 @@ INT_EMO_MODEL_PATH = 'model_int'
 EXT_EMO_MODEL_PATH = 'model_ext'
 DOM_MODEL_PATH = 'model_dom'
 
-# Классы эмоций 
-EMOTIONS = ['angry_audio', 'disgusted_audio', 'scared_audio', 'happy_audio', 'neutral_audio', 'sad_audio', 'surprised_audio']
 
 logging.basicConfig(level=logging.INFO,    
                     format='%(asctime)s - %(levelname)s - %(module)s - %(message)s'
@@ -59,7 +61,12 @@ arousal_map = {
 # Создаем pipeline для инференса
 emo_int =  mlflow.transformers.load_model(INT_EMO_MODEL_PATH) 
 emo_ext =  mlflow.transformers.load_model(EXT_EMO_MODEL_PATH) 
-emo_dom =  mlflow.transformers.load_model(DOM_MODEL_PATH) 
+#emo_dom =  mlflow.transformers.load_model(DOM_MODEL_PATH) 
+
+processor = AutoProcessor.from_pretrained(DOM_MODEL_PATH)
+model = AutoModelForAudioClassification.from_pretrained(DOM_MODEL_PATH)
+model.eval().to("cuda" if torch.cuda.is_available() else "cpu")
+
 
 # Создаём функцию callback для обработки данных из очереди
 def callback(ch, method, properties, body):
@@ -89,11 +96,117 @@ def callback(ch, method, properties, body):
     message["valence_classic_external_audio"]= sum(emo['score'] * valence_map[emo['label']] for emo in res)
     message["arousal_classic_external_audio"] = sum(emo['score'] * arousal_map[emo['label']] for emo in res)
 
-    res = emo_dom(DATA_DIR+"/"+audio_file)
+   # res = emo_dom(DATA_DIR+"/"+audio_file)
     logging.info(f'доминированиа - {res}')
-    for i in res:
-        message[f"{i['label']}_audio"] = i['score']
+    # for i in res:
+    #     message[f"{i['label']}_audio"] = i['score']
         
+    waveform, sr = torchaudio.load(DATA_DIR+"/"+audio_file)
+
+    # Усреднение каналов при необходимости
+    if waveform.shape[0] > 1:
+        waveform = waveform.mean(dim=0, keepdim=True)
+
+    # Приведение к 16 кГц
+    if sr != 16000:
+        waveform = torchaudio.transforms.Resample(orig_freq=sr, new_freq=16000)(waveform)
+
+    # Подготовка входов
+    inputs = processor(
+        waveform.squeeze().numpy(),
+        sampling_rate=16000,
+        return_tensors="pt",
+        padding=True,
+        truncation=True,
+        max_length=16000 * 10
+    )
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+    # Предсказание
+    with torch.no_grad():
+        logits = model(**inputs).logits
+
+    # Извлечение значений
+    valence, arousal, dominance = logits[0].cpu().numpy().tolist()
+
+    message["valence_audio"] = valence
+    message["arousal_audio"] = arousal
+    message["dominance_audio"] = dominance    
+    
+    logging.info(f"Модели отработали")
+    
+    
+    # Позитивные и негативные эмоции
+    pos = ["happy_external_audio"]
+    neg = ["angry_external_audio", "scared_external_audio", "disgusted_external_audio", "sad_external_audio"]
+
+    if message["valence_classic_external_audio"] > 0.1:
+        pos.append("surprised_external_audio")
+    elif message["valence_classic_external_audio"] < -0.1:
+        neg.append("surprised_external_audio")
+
+    pos_vals = [ message[emo] for emo in pos]
+    neg_vals = [ message[emo] for emo in neg]
+
+    message["mean_positive_external_audio"] = np.mean(pos_vals)
+    message["min_positive_external_audio"] = np.min(pos_vals)
+    message["max_positive_external_audiot"] = np.max(pos_vals)
+    message["mean_negative_external_audio"] = np.mean(neg_vals)
+    message["min_negative_external_audio"] = np.min(neg_vals)
+    message["max_negative_external_audio"] = np.max(neg_vals)
+    
+    
+    # Позитивные и негативные эмоции
+    pos = ["happy_internal_audio"]
+    neg = ["angry_internal_audio", "scared_internal_audio", "disgusted_internal_audio", "sad_internal_audio"]
+
+    if message["valence_classic_internal_audio"] > 0.1:
+        pos.append("surprised_internal_audio")
+    elif message["valence_classic_internal_audio"] < -0.1:
+        neg.append("surprised_internal_audio")
+
+    pos_vals = [ message[emo] for emo in pos]
+    neg_vals = [ message[emo] for emo in neg]
+
+    message["mean_positive_internal_audio"] = np.mean(pos_vals)
+    message["min_positive_internal_audio"] = np.min(pos_vals)
+    message["max_positive_internal_audio"] = np.max(pos_vals)
+    message["mean_negative_internal_audio"] = np.mean(neg_vals)
+    message["min_negative_internal_audio"] = np.min(neg_vals)
+    message["max_negative_internal_audio"] = np.max(neg_vals)        
+        
+    
+    int_emo  = message.get("emotion_internal_audio")
+    ext_emo  = message.get("emotion_external_audio")
+    conf_int = (message.get("confidence_internal_audio") or 0)
+    conf_ext = (message.get("confidence_external_audio") or 0)
+
+    both_exist = int_emo is not None and ext_emo is not None
+
+    # -------- расчёт emotion_conf_audio ------------------------------------
+    if both_exist:
+        # обе уверенности низкие → «neutral»
+        if conf_int < 0.6 and conf_ext < 0.6:
+            emotion_conf = "neutral"
+        # иначе выбираем эмоцию с большей (или равной) уверенностью
+        else:
+            emotion_conf = ext_emo if conf_ext >= conf_int else int_emo
+    else:
+        # есть только одна эмоция → берём её
+        emotion_conf = ext_emo if ext_emo is not None else int_emo
+
+    message["emotion_conf_audio"] = emotion_conf
+
+    # -------- расчёт hidden_emotion_audio ----------------------------------
+    hidden = None
+    if (
+        both_exist and                 # обе эмоции получены
+        int_emo != emotion_conf and    # внутренняя ≠ итоговой
+        conf_int >= 0.4                # её уверенность ≥ 0.4
+    ):
+        hidden = int_emo
+
+    message["hidden_emotion_audio"] = hidden
         
     message['user_id'] = user_id
     message['timestamp']  = tstamp

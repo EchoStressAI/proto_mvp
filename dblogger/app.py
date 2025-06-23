@@ -89,7 +89,7 @@ def upsert_chanks(conn, existing_columns, user_id, timestamp, **kwargs):
     update_assignments = ', '.join([f"{col} = EXCLUDED.{col}" for col in columns])
     
     query = f"""
-        INSERT INTO chanks ({insert_columns})
+        INSERT INTO chunks_new ({insert_columns})
         VALUES ({insert_placeholders})
         ON CONFLICT (user_id, timestamp) DO UPDATE SET {update_assignments};
     """
@@ -98,7 +98,7 @@ def upsert_chanks(conn, existing_columns, user_id, timestamp, **kwargs):
         cur.execute(query, [user_id, timestamp] + values)
         conn.commit()        
 
-existing_columns = get_table_columns(conn, 'chanks')  # Получаем список колонок один раз за сессию
+existing_columns = get_table_columns(conn, 'chunks_new')  # Получаем список колонок один раз за сессию
 
 
 logging.info(f'Существующие колонки БД - {existing_columns}')

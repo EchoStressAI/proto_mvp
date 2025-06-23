@@ -176,6 +176,25 @@ def callback(ch, method, properties, body):
     # dominant, valence_video, arousal_video placeholders (if needed)
     result['emotion_mode_video'] = summary['emotion_mode_video']
     result['valence_mean_video'] = summary['valence_mean_video']
+        # Позитивные и негативные эмоции
+        
+    pos = ["happy_mean_video"]
+    neg = ["angry_mean_video", "scared_mean_video", "disgusted_mean_video", "sad_mean_video"]
+    val =result['valence_mean_video']
+    if val > 0.1:
+        pos.append("surprised_mean_video")
+    elif val < -0.1:
+        neg.append("surprised_mean_video")
+
+    pos_vals = [ result[emo] for emo in pos]
+    neg_vals = [ result[emo] for emo in neg]
+
+    result["mean_positive_video"] = np.mean(pos_vals)
+    result["min_positive_video"] = np.min(pos_vals)
+    result["max_positive_video"] = np.max(pos_vals)
+    result["mean_negative_video"] = np.mean(neg_vals)
+    result["min_negative_video"] = np.min(neg_vals)
+    result["max_negative_video"] = np.max(neg_vals)
 
 
     result['user_id'] = user_id

@@ -3,200 +3,395 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/styles.css') }}" rel='stylesheet' type='text/css' />
   <title>Видео-диалог</title>
 </head>
 <body class="index">
-  <div class="container">
-    <header class="main_header">
+	<div id="mobile-message">
+        <h1>Этот сайт предназначен только для просмотра с компьютеров</h1>
+        <p>Пожалуйста, откройте сайт на компьютере или ноутбуке.</p>
+    </div>
+  <div class="container p-0" id="content">
+   <!--  <header class="main_header round1">
       <img class="logo" alt="EchoStressAI" src="{{ url_for('static', filename='images/logo.png') }}">
 	  <div>
-		  <button class="main-button" id="PauseRecording" disabled>Пауза</button>
-		  <button class="main-button" id="toggleRecording1" disabled>Начать запись</button>
-		  <a href="/logout" class="btn-primary btn-login">Выйти</a>
+		 
+		  <a href="/logout" class="orange-button btn-primary btn-login">Выйти</a>
 	  </div>
-    </header>
-    <div class="site-container">
-      <div class="site-container_block">
-        <h4 id="questionText" class="main_message">Приветствуем вас!<button class="main-button" id="toggleRecording2" >Начать диалог</button></h4> 
-		<h4 id="gifStatus">Жду ответа...</h4>
-        <!-- GIF для разных состояний -->
-        <img class="ani_gif" id="idleGif" src="{{ url_for('static', filename='images/idle.gif') }}" alt="Ожидание вопроса" style="display:none;">
-        <img class="ani_gif" id="questionGif" src="{{ url_for('static', filename='images/question.gif') }}" alt="Загрузка вопроса..." style="display:none;">
-        <img class="ani_gif" id="speakingGif" src="{{ url_for('static', filename='images/ActiveListening.gif') }}" alt="Пользователь отвечает" style="display:none;">
-        <audio id="questionAudio"></audio>
-        <div id="ackQuestionResponce"></div>
+    </header> -->
+	 <nav class="navbar navbar-expand-md bg-white shadow-sm sticky-top mb-3 round1">
+    <div class="container-fluid d-flex justify-content-between align-items-center px-3">
+      <!-- Логотип -->
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="EchoStressAI" class="top-logo" />
+      </a>
+      <!-- Уведомления и аватар -->
+      <div class="d-flex gap-4 align-items-center">
+         
+		 <a href="#" class="orange-text"> <img src="{{ url_for('static', filename='images/download.svg') }}" >Скачать полную инструкцию</a>
+		 <a href="/logout" class="orange-button btn-primary btn-login">Выйти</a>
       </div>
-
-      <div class="site-container_block">
-        <h2>Ваш ответ</h2>
-		<div class="wrap_videos">
-            <video id="videoElement" autoplay muted controls></video>
-        </div>
-        <div class="answer_wrap">
-          <button class="main-button" id="toggleRecording"></button> <span id="toggleRecordingText">Нажмите, чтобы ответить ассистенту</span>
-		  <button class="main-button2" id="messaging"></button>
-		  <button class="main-button2" id="sound"></button>
-        </div>
-      </div>
-	  <div class="site-container_block">
-	  <h2 class="c19" id="h.jntgm66xiojv"><span class="c7 c15">Инструкция перед началом опроса</span></h2><p class="c17"><span>Пожалуйста, отвечайте ассистенту </span><span class="c7">откровенно</span><span>&nbsp;и </span><span class="c7">полными предложениями</span><span>. Пример: </span><span class="c21">Считаете ли Вы, что справитесь со всеми задачами на этой смене?</span><span>&nbsp;→ </span><span class="c7 c13">«Я считаю, что справлюсь со всеми задачами на этой смене»</span></p><h3 class="c11" id="h.4o6gq17yiozq"><span class="c3">Ориентиры при описании эмоций</span></h3>
-		  <table class="table">
-				<thead class="thead-light">
-					<tr>
-						<th class="c12" colspan="1" rowspan="1"><p class="c10"><span class="c7">Радость</span></p></th>
-						<th class="c2" colspan="1" rowspan="1"><p class="c10"><span class="c7">Грусть</span></p></th>
-						<th class="c8" colspan="1" rowspan="1"><p class="c10"><span class="c7">Удивление</span></p></th>
-						<th class="c0" colspan="1" rowspan="1"><p class="c10"><span class="c7">Злость</span></p></th>
-						<th class="c4" colspan="1" rowspan="1"><p class="c10"><span class="c7">Страх</span></p></th>
-						<th class="c9" colspan="1" rowspan="1"><p class="c10"><span class="c7">Отвращение</span></p></th>
-					</tr>
-				</thead>
-				<tbody>
-				<tr class="c5"><td class="c12" colspan="1" rowspan="1"><p class="c1"><span class="c6">удовлетворение</span></p></td><td class="c2" colspan="1" rowspan="1"><p class="c1"><span class="c6">грусть</span></p></td><td class="c8" colspan="1" rowspan="1"><p class="c1"><span class="c6">удивление</span></p></td><td class="c0" colspan="1" rowspan="1"><p class="c1"><span class="c6">раздражение</span></p></td><td class="c4" colspan="1" rowspan="1"><p class="c1"><span class="c6">беспокойство</span></p></td><td class="c9" colspan="1" rowspan="1"><p class="c1"><span class="c6">брезгливость</span></p></td></tr>
-				<tr class="c5"><td class="c12" colspan="1" rowspan="1"><p class="c1"><span class="c6">радость</span></p></td><td class="c2" colspan="1" rowspan="1"><p class="c1"><span class="c6">печаль</span></p></td><td class="c8" colspan="1" rowspan="1"><p class="c1"><span class="c6">изумление</span></p></td><td class="c0" colspan="1" rowspan="1"><p class="c1"><span class="c6">гнев</span></p></td><td class="c4" colspan="1" rowspan="1"><p class="c1"><span class="c6">страх</span></p></td><td class="c9" colspan="1" rowspan="1"><p class="c1"><span class="c6">отвращение</span></p></td></tr>
-				<tr class="c5"><td class="c12" colspan="1" rowspan="1"><p class="c1"><span class="c6">восторг</span></p></td><td class="c2" colspan="1" rowspan="1"><p class="c1"><span class="c6">отчаяние</span></p></td><td class="c8" colspan="1" rowspan="1"><p class="c1"><span class="c6">потрясение</span></p></td><td class="c0" colspan="1" rowspan="1"><p class="c1"><span class="c6">ярость</span></p></td><td class="c4" colspan="1" rowspan="1"><p class="c1"><span class="c6">ужас</span></p></td><td class="c9" colspan="1" rowspan="1"><p class="c1"><span class="c6">сильное отвращение</span></p></td></tr>
-				</tbody>
-			</table>
+    </div>
+  </nav>
+	
+	
+	<div class="site-container bg-white px-4 py-3 round1" id="intro-text">
+		<div class="site-container_block">
+		<h4><span id="username"></span>, приветствую на опросе <span id="work1"></span>!</h4>
+		<button class="orange-button my-3"><img src="{{ url_for('static', filename='images/fe_question.svg') }}"> Для работы с Ассистентом изучите инструкцию ниже</button>
+		<ol class="short-intro">
+			<li>Найдите тихое и хорошо освещенное место. В кадре не должны появляться другие люди. </li>
+			<li>Разрешите доступ к микрофону и камере. Настоятельно рекомендуем не использовать телефон: проходите опрос с ноутбука или компьютера с подключенной веб-камерой.</li>
+			<li>При общении с ассистентом смотрите в камеру. Общайтесь как по обычной видеосвязи.</li>
+			<li>Дождитесь первого вопроса от Ассистента.</li>
+			<li>Отвечайте честно и не думайте слишком долго. Пожалуйста, отвечайте на каждый вопрос не дольше 30 секунд.</li>
+			<li>Если система зависла и долго не задаёт вопрос, подождите 20–30 секунд. Если проблема не решится, пожалуйста, напишите в чат поддержки.</li>
+			<li>Ассистент задаст 8 вопросов, а затем предложит закончить диалог или перейти к свободному общению.</li>
+			<li>Вы можете закончить свободное общение в любой момент, нажав кнопку «Выйти».</li>
+		</ol>
+		<button class="main-button" id="toggleRecording2" >Начать диалог</button>
+		</div>
 	</div>
-      <script>
-        const idleGif = document.getElementById('idleGif');
-        const gifStatus = document.getElementById('gifStatus');
-        const questionGif = document.getElementById('questionGif');
-        const speakingGif = document.getElementById('speakingGif');
-        const questionAudio = document.getElementById('questionAudio');
-		const videoElement = document.getElementById('videoElement');
-        const toggleRecordingBtn = document.getElementById('toggleRecording');
-        const toggleRecordingTxt = document.getElementById('toggleRecordingText');
-
-        let mediaRecorder;
-        let recordedChunks = [];
-        let cameraStream;
-        let isRecording = false;
-
-		// helper для правильного декодирования base64→UTF-8
-        function decodeB64Utf8(b64) {
-           const bin = atob(b64);
-           // превращаем JS-строку (кодовые единицы 0–255) в байты
-           const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-           // TextDecoder по-умолчанию — 'utf-8'
-           return new TextDecoder().decode(bytes);
-        }
-
-        // По окончании аудио вопроса возвращаем idle GIF
-        questionAudio.addEventListener('ended', () => {
-          questionGif.style.display = 'none';
-          idleGif.style.display = 'block';
-		  gifStatus.textContent = 'Жду ответа...';
-        });
-
-        // Проверка вопроса при загрузке
-        document.addEventListener('DOMContentLoaded', async () => {
-          idleGif.style.display = 'block';
-          try {
-            const resp = await fetch('/check_question');
-            if (resp.ok) {
-              const getQ = await fetch('/get_question');
-              if (getQ.ok) {
-                // читаем и декодируем текст из заголовка
-                const b64 = getQ.headers.get('X-Question-Text');
-                if (b64) {
-                  const text = decodeB64Utf8(b64);
-                  document.getElementById('questionText').textContent = text;
-                }
-               const audioBlob = await getQ.blob();
-               questionAudio.src = URL.createObjectURL(audioBlob);
-              }
-            }
-          } catch (e) {
-            console.error('Ошибка при проверке вопроса:', e);
-          }
-        });
-
-        // Таймер для новых вопросов
-        async function checkAndPlayQuestion() {
-          try {
-            const resp = await fetch('/check_question');
-            if (resp.ok) {
-              const getQ = await fetch('/get_question');
-              if (getQ.ok) {
-			  // читаем и декодируем текст из заголовка
-                const b64 = getQ.headers.get('X-Question-Text');
-                if (b64) {
-                  const text = decodeB64Utf8(b64);
-                  document.getElementById('questionText').textContent = text;
-                }
+	
+	<div class="site-container" id="main-content">
+		<div class="site-container">
+		  <div class="site-container_block col-12">
+			 <h1>Интеллектуальная оценка состояния <span id="work2"></span></h1> 
+		  </div>
+		</div>
+		<div class="site-container mb-4">
+		  <div class="site-container_block col-12 round1 bg-white pt-3 px-4 pb-4">
+		  <span><img src="{{ url_for('static', filename='images/q.svg') }}"> Вопрос ИИ-Ассистента: 1 из 7 обязательных </span>
+			 <h4 id="questionText" class="mt-2 main_message1">Приветствуем вас!</h4> 
+		  </div>
+		</div>
+		<div class="site-container mb-4 row">
+			  <div class="site-container_block col-6">
 				
-                const audioBlob = await getQ.blob();
-                idleGif.style.display = 'none';
-                questionGif.style.display = 'block';
-				gifStatus.textContent = 'Обрабатываю запрос...';
-                questionAudio.src = URL.createObjectURL(audioBlob);
-                questionAudio.play().catch(e => console.warn('Автовоспроизведение заблокировано:', e));
-                await fetch('/ack_question', { method: 'POST' });
-              }
-            }
-          } catch (e) {
-            console.error('Ошибка при проверке вопроса:', e);
-          }
-        }
-        setInterval(checkAndPlayQuestion, 1000);
+				<!-- GIF для разных состояний -->
+				<img class="ani_gif" id="idleGif" src="{{ url_for('static', filename='images/idle.gif') }}" alt="Ожидание вопроса" style="display:none;">
+				<img class="ani_gif" id="questionGif" src="{{ url_for('static', filename='images/question.gif') }}" alt="Загрузка вопроса..." style="display:none;">
+				<img class="ani_gif" id="speakingGif" src="{{ url_for('static', filename='images/ActiveListening.gif') }}" alt="Пользователь отвечает" style="display:none;">
+				<h6 id="gifStatus" class="mt-3">Жду ответа...</h6>
+				<audio id="questionAudio"></audio>
+				<div id="ackQuestionResponce"></div>
+			  </div>
 
-        // Кнопка записи
-        toggleRecordingBtn.addEventListener('click', async () => {
-          if (!isRecording) {
-            try {
-              cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-              recordedChunks = [];
-              //mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/webm' });
-			  mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
-			  videoElement.srcObject = cameraStream;
-              videoElement.muted = true; // Мутим видео, чтобы не было эха
-              
-              mediaRecorder.ondataavailable = e => { if (e.data.size > 0) 
-			 
-			  recordedChunks.push(e.data); };
-              mediaRecorder.start();
-			  toggleRecordingBtn.classList.add("isRecording");
-              toggleRecordingTxt.textContent = 'Нажмите, чтобы закончить запись';
-              isRecording = true;
-              idleGif.style.display = 'none';
-              questionGif.style.display = 'none';
-              speakingGif.style.display = 'block';
-			  gifStatus.textContent = 'Внимательно слушаю...';
-            } catch (e) {
-              alert('Ошибка доступа к камере или микрофону. Проверьте настройки.');
+			<div class="site-container_block col-6">
+					<video id="videoElement" autoplay muted controls></video>
+					<h6 id="videoStatus"></h6>
+			</div>
+		  </div>
+		  <div class="site-container_block text-center bg-white mb-4 p-4 round1">
+		  <h2 class="c19" id="h.jntgm66xiojv"><span class="c7 c15">Инструкция перед началом опроса</span></h2><p class="c17"><span>Пожалуйста, отвечайте ассистенту </span><span class="c7">откровенно</span><span>&nbsp;и </span><span class="c7">полными предложениями</span></p>
+		  
+		  <h5>Пример диалога: </h5>
+		  <div class="test-dialogx p-4 shadow-sm border round1 mx-5 mb-4">
+			<div class="pb-4" style="display: flex; flex-direction: column;     align-items: flex-start;">
+				<span class="assistent pb-2">Ассистент</span>
+				<span class="assistent_text p-2">Считаете ли Вы, что справитесь со всеми задачами на этой смене?</span>
+			</div>
+			<div style="display: flex; flex-direction: column;     align-items: flex-end;">
+				<span class="user pb-2">Пользователь</span>
+				<span class="user_text p-2">Я считаю, что справлюсь со всеми задачами на этой смене</span>
+			</div>
+		  </div>  
+		  <h3 class="c11" id="h.4o6gq17yiozq"><span class="c3">Ориентиры при описании эмоций</span></h3>
+			  
+			  
+			  <table class="table" cellspacing="24">
+					
+						<tr>
+							<th ><p><span>Радость</span></p></th>
+							<td style="background:#FB7D0014; color:#FB7D00" >удовлетворение</td>
+							<td style="background:#FB7D0033; color:#FB7D00">радость</td>
+							<td style="background:#FB7D0066; color:#FB7D00">восторг</td>
+						</tr>
+						<tr>
+							<th >Грусть</th>
+							<td style="background:#0042C714; color:#0042C7">грусть</td>
+							<td style="background:#0042C733; color:#0042C7">печаль</td>
+							<td style="background:#0042C766; color:#0042C7">отчаяние</td>
+						</tr>
+						<tr>						
+							<th >Удивление</th>
+							<td style="background:#00A60014; color:#00A600">удивление</td>
+							<td style="background:#00A60033; color:#00A600">изумление</td>
+							<td style="background:#00A60066; color:#00A600">потрясение</td>
+						</tr>
+						<tr>	
+							<th >Злость</th>					
+							<td style="background:#77030314; color:#770303">раздражение</td>
+							<td style="background:#77030333; color:#770303">гнев</td>
+							<td style="background:#77030366; color:#770303">ярость</td>
+						</tr>
+						<tr>	
+							<th >Страх</th>
+							<td style="background:#2F2F2F14; color:#2F2F2F">беспокойство</td>
+							<td style="background:#2F2F2F33; color:#2F2F2F">страх</td>
+							<td style="background:#2F2F2F66; color:#2F2F2F">ужас</td>
+						</tr>
+						<tr>	
+							<th >Отвращение</th>
+							<td style="background:#4E5A1114; color:#4E5A11">брезгливость</td>
+							<td style="background:#4E5A1133; color:#4E5A11">отвращение</td>
+							<td style="background:#4E5A1166; color:#4E5A11">сильное отвращение</td></tr>
+						</tr>
+						<tr>
+		
+				</table>
+		</div>
+		<div class="recording round1 bg-white">
+			<div id="toggleRecordingText"><img src="{{ url_for('static', filename='images/i.svg') }}"> Нажмите <img src="{{ url_for('static', filename='images/mic-mini.svg') }}"> чтобы ответить ассистенту</div>
+			
+			<div class="recording-buttons">
+			<button class="main-button2" id="dinamic"></button> 
+			<button class="main-button2" id="repeat"></button> 
+			<button class="main-button2" id="toggleRecording"></button>
+			<button class="main-button2" id="pause"></button>
+			<button class="main-button2" id="messaging"></button>
+			</div>
+			<!-- <button class="main-button2" id="toggleRecording1"></button> -->
+	 </div>
+	</div>
+	
+	
+	 
+	<script>
+        // Проверяем, является ли устройство мобильным
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
+        }
+        
+        // Если мобильное устройство, показываем сообщение и скрываем контент
+        if (isMobileDevice()) {
+            document.getElementById('mobile-message').style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+        }
+    </script>
+      <script>
+      document.addEventListener('DOMContentLoaded', function() {
+    // Получаем элементы DOM
+    const idleGif = document.getElementById('idleGif');
+    const videoStatus = document.getElementById('videoStatus');
+    const gifStatus = document.getElementById('gifStatus');
+    const questionGif = document.getElementById('questionGif');
+    const speakingGif = document.getElementById('speakingGif');
+    const questionAudio = document.getElementById('questionAudio');
+    const videoElement = document.getElementById('videoElement');
+    const toggleRecording2 = document.getElementById('toggleRecording2');
+    const toggleRecordingBtn = document.getElementById('toggleRecording');
+    const toggleRecordingTxt = document.getElementById('toggleRecordingText');
+    const username = document.getElementById('username');
+    const work1 = document.getElementById('work1');
+    const work2 = document.getElementById('work2');
+    const introText = document.getElementById('intro-text');
+    const mainContent = document.getElementById('main-content');
+
+    // Переменные состояния
+    let mediaRecorder;
+    let recordedChunks = [];
+    let cameraStream;
+    let isRecording = false;
+    let questionInterval;
+    let dialogActive = false;
+
+    // Инициализация страницы
+    function initPage() {
+        // Устанавливаем значения из cookies
+        const work = getCookie('work');
+        const savedUsername = getCookie('username');
+        const dialogStarted = getCookie('dialogStarted');
+        
+        if (work === 'before') {
+            work1.textContent = "перед сменой";
+            work2.textContent = "перед началом смены";
+        } else if (work === 'after') {
+            work1.textContent = "после смены";
+            work2.textContent = "после окончания смены";
+        }
+        
+        if (savedUsername) {
+            username.textContent = savedUsername;
+        }
+        
+        // Если диалог уже был начат ранее
+        if (dialogStarted === '1') {
+            startDialog();
+        } else {
+            // Скрываем основной контент до начала диалога
+            mainContent.style.display = 'none';
+        }
+    }
+
+    // Начало диалога
+    async function startDialog() {
+        // Устанавливаем cookie о начале диалога
+        setCookie('dialogStarted', '1', 30);
+        
+        // Показываем основной контент
+        introText.style.display = 'none';
+        mainContent.style.display = 'block';
+        dialogActive = true;
+        
+        // Показываем idle GIF по умолчанию
+        showIdleGif();
+        
+        // Запускаем проверку вопросов
+        questionInterval = setInterval(checkAndPlayQuestion, 1000);
+        
+        // Загружаем первый вопрос
+        await loadQuestion();
+    }
+
+    // Загрузка вопроса
+    async function loadQuestion() {
+        try {
+            const resp = await fetch('/check_question');
+            if (resp.ok) {
+                const getQ = await fetch('/get_question');
+                if (getQ.ok) {
+                    const b64 = getQ.headers.get('X-Question-Text');
+                    if (b64) {
+                        const text = decodeB64Utf8(b64);
+                        document.getElementById('questionText').textContent = text;
+                    }
+                    const audioBlob = await getQ.blob();
+                    questionAudio.src = URL.createObjectURL(audioBlob);
+                    showQuestionGif();
+                    questionAudio.play().catch(e => console.warn('Автовоспроизведение заблокировано:', e));
+                    await fetch('/ack_question', { method: 'POST' });
+                }
             }
-          } else {
+        } catch (e) {
+            console.error('Ошибка при загрузке вопроса:', e);
+        }
+    }
+
+    // Проверка и воспроизведение вопроса
+    async function checkAndPlayQuestion() {
+        if (!dialogActive) return;
+        
+        try {
+            const resp = await fetch('/check_question');
+            if (resp.ok) {
+                await loadQuestion();
+            }
+        } catch (e) {
+            console.error('Ошибка при проверке вопроса:', e);
+        }
+    }
+
+    // Показать GIF вопроса
+    function showQuestionGif() {
+        idleGif.style.display = 'none';
+        speakingGif.style.display = 'none';
+        questionGif.style.display = 'block';
+        gifStatus.classList.add('active');
+        gifStatus.textContent = 'Ассистент говорит...';
+    }
+
+    // Показать idle GIF
+    function showIdleGif() {
+        questionGif.style.display = 'none';
+        speakingGif.style.display = 'none';
+        idleGif.style.display = 'block';
+        gifStatus.classList.remove('active');
+        gifStatus.textContent = 'Жду ответа...';
+    }
+
+    // Показать speaking GIF
+    function showSpeakingGif() {
+        idleGif.style.display = 'none';
+        questionGif.style.display = 'none';
+        speakingGif.style.display = 'block';
+        gifStatus.textContent = 'Внимательно слушаю...';
+    }
+
+    // Обработчик кнопки записи
+    toggleRecordingBtn.addEventListener('click', async () => {
+        if (!isRecording) {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(cameraStream, { mimeType: 'video/mp4' });
+                videoElement.srcObject = cameraStream;
+                videoElement.muted = true;
+		videoElement.autoplay  = true;                
+                mediaRecorder.ondataavailable = e => { 
+                    if (e.data.size > 0) recordedChunks.push(e.data); 
+                };
+                
+                mediaRecorder.start();
+                toggleRecordingBtn.classList.add("isRecording");
+                toggleRecordingTxt.textContent = 'Нажмите, чтобы закончить запись';
+                isRecording = true;
+                showSpeakingGif();
+                videoStatus.textContent = 'Вы говорите... Пожалуйста, уложитесь в 30 секунд.';
+            } catch (e) {
+                alert('Ошибка доступа к камере или микрофону. Проверьте настройки.');
+            }
+        } else {
             mediaRecorder.stop();
             mediaRecorder.onstop = async () => {
-              cameraStream.getTracks().forEach(t => t.stop());
-			  toggleRecordingBtn.classList.remove("isRecording");
-              toggleRecordingTxt.textContent = 'Нажмите, чтобы ответить ассистенту';
-              isRecording = false;
-              speakingGif.style.display = 'none';
-              idleGif.style.display = 'block';
+                cameraStream.getTracks().forEach(t => t.stop());
+                toggleRecordingBtn.classList.remove("isRecording");
+                toggleRecordingTxt.textContent = 'Нажмите, чтобы ответить ассистенту';
+                isRecording = false;
+                showIdleGif();
 
-              const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
-			  
-			  videoElement.srcObject = null; // Очищаем поток с камеры
-              videoElement.src = URL.createObjectURL(videoBlob); // Устанавливаем записанное видео
-              videoElement.controls = true; // Включаем управление для воспроизведения
-              videoElement.muted = false; // Размутим видео
-			  
-			  
-              const formData = new FormData();
-              formData.append('video', videoBlob, 'answer.webm');
-              formData.append('text', document.getElementById('questionText').textContent);
-              try {
-                await fetch('/upload_answer', { method: 'POST', body: formData });
-              } catch (e) {
-                console.error('Ошибка при отправке видео:', e);
-              }
+                const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+		videoElement.autoplay  = false
+                videoElement.srcObject = null;
+                videoElement.src = URL.createObjectURL(videoBlob);
+                videoElement.controls = true;
+                videoElement.muted = true;
+                
+                const formData = new FormData();
+                formData.append('video', videoBlob, 'answer.webm');
+                formData.append('text', document.getElementById('questionText').textContent);
+                
+                try {
+                    await fetch('/upload_answer', { method: 'POST', body: formData });
+                } catch (e) {
+                    console.error('Ошибка при отправке видео:', e);
+                }
             };
-          }
-        });
+        }
+    });
+
+    // Обработчик кнопки начала диалога
+    toggleRecording2.addEventListener('click', startDialog);
+
+    // Обработчик окончания аудио вопроса
+    questionAudio.addEventListener('ended', showIdleGif);
+
+    // Вспомогательные функции
+    function decodeB64Utf8(b64) {
+        const bin = atob(b64);
+        const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+    }
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+    }
+
+    function setCookie(name, value, days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        document.cookie = `${name}=${value}; expires=${date.toUTCString()}; path=/`;
+    }
+
+    // Инициализация страницы
+    initPage();
+});
       </script>
     </div>
   </div>

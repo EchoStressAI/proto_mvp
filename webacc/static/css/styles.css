@@ -1,4 +1,5 @@
 html {height: 100%;}
+	.cab_index{background:#F9F9F9}
 body.main-form {    
 /*    background: url(../images/bg_wave.svg) bottom no-repeat;*/
     }
@@ -16,11 +17,22 @@ display: flex;
 
 @media (min-width: 1200px) {
   .container {
-    width: 878px;
+    width: 952px;
   }
 }
 * {color: #354D6C;
 }
+
+.navigation-right
+{    display: flex;
+    gap: 12px;}
+
+.navbar-nav .nav-link.active, .navbar-nav .nav-link.show {
+    color: #FF7313;
+	font-weight: 600;
+    padding: 8px 0;
+}
+
  
     #questionAudio {
       display: none;
@@ -44,19 +56,23 @@ display: flex;
     font-family: Source Sans Pro;
   }
   h1{
-    font-weight: 700;
-    line-height: 68px;
+    font-weight: 600;
+	font-size: 1.5rem;
     letter-spacing: 0px;
     }
 
   h2 {
     font-weight: 600;
+	font-size: 1rem;
     line-height: 24px;
-    letter-spacing: 0%;
-    margin-top: 32px;
-	margin-bottom: 10px;
+    letter-spacing: 0%;	
     }
-    header div {margin-bottom:48px}
+	h5 {font-size: 0.75rem;}
+	
+	ul.sidebar-nav
+	{padding-inline-start: 8px;}
+	
+    header div {margin-bottom:8px}
 	
   .input_login {
     background: #F7F7F7;
@@ -79,8 +95,13 @@ display: flex;
     box-sizing: border-box;
     border-radius: 15px;
 	margin-top: 8px;}
+	
+   #main_nav{    margin: 0 -16px 0 0;}
+	
   .work_wrap{margin-top: 1.5rem;}
   
+  .sidebar-nav li.nav-item {list-style:none;     margin-bottom: 0.5rem;}
+  .sidebar-nav li.nav-item .nav-link.active {color:#FF7313; font-weight:700;	}
   
     button[type="submit"], .main-button{
     background: #FF7313;
@@ -153,9 +174,22 @@ display: flex;
     border-radius: 5px;
   }
 
-  .main_header .logo {width:140px;}
+  .main_header .logo {width:71px;}
 
+.round1{background:#fff;
+    border-radius: 16px;
+	}
+	
+.fullpage-row {
+    min-height: calc(100vh - 56px);
+    gap: 16px;
+    flex-wrap: inherit;
+}	
+    html,body      { height: 100%; }
+    .dashboard-iframe { border: none; width: 100%; height: 100%; }
+	
   .main_header {
+	
     display: flex;
     justify-content: space-between;
     align-items: flex-end;

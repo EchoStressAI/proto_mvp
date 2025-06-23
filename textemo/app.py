@@ -76,11 +76,15 @@ def callback(ch, method, properties, body):
     logging.info(f'Получено сообщение - {body}')
     message = json.loads(body)
     user_id = message['user_id']
-    text = message['text']    
+    text = message['text'].strip()
     tstamp = message['timestamp']
     logging.info(f'start predict: {text}')
     # Получаем вероятности всех эмоций
-    message = predict_emotions(text)
+    if text !='':        
+        message = predict_emotions(text)
+    else:
+        logging.info(f'empty text')        
+        message =  {EMOTIONS[i]: 0.0 for i in range(len(EMOTIONS))}
     emo_rec =  ''
     argmax_emo = ''
     argmax_val = 0.0

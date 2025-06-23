@@ -1,28 +1,122 @@
-<!-- templates/users.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Список пользователей</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { padding: 8px; border: 1px solid #ccc; text-align: left; }
-    th { background: #f0f0f0; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Личный кабинет Echostress.ai</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" />
+
+  <!-- Ваши глобальные стили -->
+  <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
+
   </style>
 </head>
-<body>
-  <h1>Пользователи</h1>
-  <table id="users-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Username</th>
-        <th>Public Name</th>
-        <th>Sex</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+<body class="cab_index container">
+
+  <!-- ====== Навигация ====== -->
+  <nav id="main_nav" class="navbar navbar-expand-md bg-white shadow-sm sticky-top round1">
+    <div class="container-fluid">
+      <!-- Логотип -->
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <img src="{{ url_for('static', filename='images/logo.png') }}"
+             alt="EchoStressAI" height="60" />
+      </a>
+
+      <!-- Бургер -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+              data-bs-target="#mainNavbar" aria-controls="mainNavbar"
+              aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Ссылки -->
+      <div id="mainNavbar">
+        <ul class="navbar-nav ms-auto mb-2 mb-md-0 gap-md-3">
+          <li class="nav-item"><a class="nav-link" href="#">Отделы</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Сотрудники</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Сценарии</a></li>
+          <li class="nav-item"><a class="nav-link active" href="#">Аналитика</a></li>
+        </ul>
+      </div>
+	  
+	  <div class="navigation-right" >
+        <a class="navbar-brand d-flex align-items-center" href="#">
+			<img src="{{ url_for('static', filename='images/ion_notifications-outline.svg') }}"/>
+		</a>
+		<a class="navbar-brand d-flex align-items-center" href="#">
+			<img src="{{ url_for('static', filename='images/Ellipse 170.jpg') }}"/>
+		</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ====== Приветствие ====== -->
+  <header class="text-center my-3 container-lg">
+    <h1>Добрый день, уважаемый Гость!</h1>
+    <h2>Вы находитесь в демо-режиме, без доступа к персональным данным</h2>
+  </header>
+
+  <!-- ====== 15 % / 85 % ====== -->
+  <div class="container-fluid">
+    <div class="row fullpage-row">
+
+      <!-- Меню (15 %) -->
+      <aside class="col-12 col-md-3 sidebar p-3 rounded-2 mb-4 mb-md-0 round1">
+        <h5 class="mb-3">Список доступных отчетов</h5>
+		<ul class="sidebar-nav ms-auto mb-2 mb-md-0 gap-md-3">
+			<li class="nav-item"><a class="nav-link active" href="#" data-iframesrc="https://46.173.18.26/superset/dashboard/p/0JWoPRGn23z/">Дашборд1</a></li>
+			<li class="nav-item"><a class="nav-link" href="#" data-iframesrc="https://46.173.18.26/superset/dashboard/p/0JWoPRGn23/">Дашборд2</a></li>
+			<li class="nav-item"><a class="nav-link" href="#" data-iframesrc="https://46.173.18.26/superset/dashboard/p/0JWoPRGn2/">Дашборд3</a></li>
+			
+		
+		</ul>
+        <!-- здесь могут быть пункты меню -->
+      </aside>
+
+      <!-- Дашборды (85 %) -->
+      <main class="col-12 col-md-9 p-3 d-flex flex-column round1">
+        <div class="flex-grow-1 rounded-2 overflow-hidden shadow-sm">
+          <iframe
+            class="dashboard-iframe"
+            src="https://46.173.18.26/superset/dashboard/p/0JWoPRGn23z/"
+            loading="lazy"
+            title="Superset dashboard"
+            allowfullscreen></iframe>
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ====== Bootstrap JS (не забудьте подключить) ====== -->
+  <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+  
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+  // Находим все ссылки с атрибутом data-iframesrc внутри элементов навигации
+  const navLinks = document.querySelectorAll('.nav-link[data-iframesrc]');
+  // Находим iframe, в который будем подгружать содержимое
+  const iframe = document.querySelector('.dashboard-iframe');
+
+  // Добавляем обработчик клика для каждой ссылки
+  navLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      // Предотвращаем стандартное поведение ссылки
+      e.preventDefault();
+      // Получаем URL из атрибута data-iframesrc
+      const newSrc = this.getAttribute('data-iframesrc');
+      // Устанавливаем новый src для iframe
+      iframe.src = newSrc;
+      
+      // Опционально: добавляем активный класс к выбранному пункту меню
+      navLinks.forEach(item => item.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+});
+  </script>
 </body>
 </html>
+
